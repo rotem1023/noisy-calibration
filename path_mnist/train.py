@@ -39,42 +39,8 @@ def main(data_flag, output_root, num_epochs, gpu_ids, batch_size, download, mode
     if not os.path.exists(output_root):
         os.makedirs(output_root)
 
-    print('==> Preparing data...')
-
-    # if resize:
-    #     data_transform = transforms.Compose(
-    #         [transforms.Resize((224, 224), interpolation=PIL.Image.NEAREST), 
-    #         transforms.ToTensor(),
-    #         transforms.Normalize(mean=[.5], std=[.5])])
-    # elif resize == False and model_name == 'densenet121':
-    #     data_transform = transforms.Compose(
-    #         [transforms.Resize((29, 29), interpolation=PIL.Image.NEAREST), 
-    #         transforms.ToTensor(),
-    #         transforms.Normalize(mean=[.5], std=[.5])])
-    # else:
-    #     data_transform = transforms.Compose(
-    #         [transforms.ToTensor(),
-    #         transforms.Normalize(mean=[.5], std=[.5])])
-     
-    # train_dataset = DataClass(split='train', transform=data_transform, download=download, as_rgb=as_rgb)
-    # val_dataset = DataClass(split='val', transform=data_transform, download=download, as_rgb=as_rgb)
-    # test_dataset = DataClass(split='test', transform=data_transform, download=download, as_rgb=as_rgb)
-
-
-    # train_loader = data.DataLoader(dataset=train_dataset,
-    #                             batch_size=batch_size,
-    #                             shuffle=True)
-    # train_loader_at_eval = data.DataLoader(dataset=train_dataset,
-    #                             batch_size=batch_size,
-    #                             shuffle=False)
-    # val_loader = data.DataLoader(dataset=val_dataset,
-    #                             batch_size=batch_size,
-    #                             shuffle=False)
-    # test_loader = data.DataLoader(dataset=test_dataset,
-    #                             batch_size=batch_size,
-    #                             shuffle=False)
     
-    train_loader,train_loader_at_eval,val_loader, test_loader = get_loaders(model_name=model_name, as_rgb=as_rgb, batch_size=batch_size, data_flag= data_flag, download=download, resize=resize)
+    train_loader,train_loader_at_eval, val_loader, test_loader = get_loaders(model_name=model_name, as_rgb=as_rgb, batch_size=batch_size, data_flag= data_flag, download=download, resize=resize)
 
 
     print('==> Building and training model...')
@@ -179,8 +145,17 @@ def main(data_flag, output_root, num_epochs, gpu_ids, batch_size, download, mode
     with open(logpath, 'a') as f:
         f.write(log)  
         print(f"log was saved to: {logpath}")
+    
+    # save logits
+    save__logits('test', test_metrics[3], output_root)
+    save__logits('valid', val_metrics[3], output_root)
+    save__logits('train', train_metrics[3], output_root)
             
 
+def save__logits(logits_type, logits, output_dir):
+    filepath = f"{output_dir}/{logits_type}_logits.pt"
+    torch_logits = torch.stack([torch.from_numpy(arr) for arr in logits])
+    torch.save(torch_logits, filepath)
 
 def train(model, train_loader, task, criterion, optimizer, device):
     total_loss = []
@@ -214,10 +189,15 @@ def test(model, evaluator, data_loader, task, criterion, device, run, save_folde
     
     total_loss = []
     y_score = torch.tensor([]).to(device)
-
+    logits_list = []
+    
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(data_loader):
             outputs = model(inputs.to(device))
+            if save_folder is not None: 
+                cur_logits = outputs.cpu().numpy()
+                for i in range(len(cur_logits)):
+                    logits_list.append(cur_logits[i])
             
             if task == 'multi-label, binary-class':
                 targets = targets.to(torch.float32).to(device)
@@ -239,7 +219,7 @@ def test(model, evaluator, data_loader, task, criterion, device, run, save_folde
         
         test_loss = sum(total_loss) / len(total_loss)
 
-        return [test_loss, auc, acc]
+        return [test_loss, auc, acc, logits_list]
 
 
 if __name__ == '__main__':
