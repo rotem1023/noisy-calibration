@@ -35,7 +35,7 @@ def main(data_flag, output_root, num_epochs, gpu_ids, batch_size, download, mode
     output_root = os.path.join(output_root, data_flag, time.strftime("%y%m%d_%H%M%S"))
     print(f"output root is: {output_root}")
 
-    output_root = f'pathmnist/ckpts/eps_0.0/{model_name}'
+    output_root = f'pathmnist/ckpts_50/eps_0.0/{model_name}'
     if not os.path.exists(output_root):
         os.makedirs(output_root)
 

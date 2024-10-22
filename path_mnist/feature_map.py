@@ -41,7 +41,33 @@ class SwinBase(nn.Module):
             x = self.model_swin(x)  # Use regular forward for the custom model
         x = x.view(x.size(0), -1)  # Flatten the output
         return x
-    
+
+
+def extract_features(dataloader, model, device):
+    features = np.array([])
+    i = 0
+    labels = []
+    for batch in dataloader:
+        i+=1
+        # Extract the tensor from the batch (batch is a tuple)
+        batch_images = batch[0].to(device)
+        labels.extend(batch[1].tolist())
+
+        # Apply resizing to all images in the batch
+        x_test = torch.stack([img for img in batch_images])
+        x_test = x_test.float().to(device)
+        cur_features = model.forward(x_test).detach().cpu().numpy()
+        if i ==1:
+            features = cur_features
+        else:
+            features = np.concatenate((features, cur_features), axis=0)
+        del cur_features
+        del batch_images
+        del x_test
+        torch.cuda.empty_cache()
+        gc.collect()
+        print(f"batch {i} completed")
+    return features, np.array(labels)
 
 
 if __name__ == '__main__':
@@ -94,35 +120,26 @@ if __name__ == '__main__':
     
     device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
     if swin22:
-        model = model = SwinBase(in_22k_1k=True)
+        model = SwinBase(in_22k_1k=True)
+        model_type = '22k'
     else:
         model = SwinBase(in_timm_1k=True)
+        model_type = '1k'
     model = model.to(device)
-    i = 0
-    features = np.array([])
-    _,_,_, dataloader = get_loaders(model_name=model_name, as_rgb=as_rgb, batch_size=batch_size, data_flag= data_flag, download=download, resize=resize)
-    for batch in dataloader:
-        i+=1
-        # Extract the tensor from the batch (batch is a tuple)
-        batch_images = batch[0].to(device)
+    model.eval()
 
-        # Apply resizing to all images in the batch
-        x_test = torch.stack([img for img in batch_images])
-        x_test = x_test.float().to(device)
-        test_features = model.forward(x_test).detach().cpu().numpy()
-        if i ==1:
-            features = test_features
-        else:
-            features = np.concatenate((features, test_features), axis=0)
-        del test_features
-        del batch_images
-        del x_test
-        torch.cuda.empty_cache()
-        gc.collect()
-        print(f"batch {i} completed")
+    _,_,validloader, testloader = get_loaders(model_name=model_name, as_rgb=as_rgb, batch_size=batch_size, data_flag= data_flag, download=download, resize=resize)
+    
+    valid_fatures, valid_labels = extract_features(validloader, model, device)
+    test_fetaures, test_labels = extract_features(testloader, model, device)
         
     current_dir = os.path.dirname(os.path.abspath(__file__))
     outputdir = f'{current_dir}/output'
     os.makedirs(outputdir, exist_ok=True) 
-    np.save(f"{outputdir}/features_map.npy", features)
+    np.save(f"{outputdir}/valid_features_map_{model_type}.npy", valid_fatures)
+    np.save(f"{outputdir}/test_features_map_{model_type}.npy", test_fetaures)
+    
+    np.save(f"{outputdir}/valid_labels_check.npy", valid_labels)
+    np.save(f"{outputdir}/test_labels_check.npy", test_labels)
+    
     print("save features")
