@@ -14,7 +14,10 @@ def _calc_center_k(k, softmaxes, features):
     k_softmaxes = softmaxes[:, k]
     adapted_features = k_softmaxes.unsqueeze(1) * features
     sum_adapted_features = adapted_features.sum(dim=0)
-    sum_k_softmaxes = k_softmaxes.sum()
+    sum_k_softmaxes = k_softmaxes.sum().item()
+    if sum_k_softmaxes ==0:
+        print(f"Warning: can't find noisy labels for class: {k}")
+        sum_k_softmaxes = 1
     return sum_adapted_features / sum_k_softmaxes
 
 
@@ -41,7 +44,10 @@ def _calc_dist_center(features, centers):
     '''
     def calc_distance(row):
         def calc_distance_from_center(center):
-            return distance.cosine(row, center)
+            output = distance.cosine(row, center)
+            if np.isnan(output):
+                return 2
+            return output
         return np.apply_along_axis(calc_distance_from_center, axis=1, arr=centers)
 
     distances = np.apply_along_axis(calc_distance, axis=1, arr=features)

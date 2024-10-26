@@ -10,12 +10,12 @@ import numpy as np
 
 
 class CalibrationLoss(nn.Module):
-    def __init__(self, n_bins=15, LOGIT=True, adaECE=False):
+    def __init__(self, n_bins=15, LOGIT=True, adaECE=False, true_labels= None):
         super(CalibrationLoss, self).__init__()
         self.nbins = n_bins
         self.LOGIT = LOGIT
         self.adaECE = adaECE
-        self.print_true_accuracy = True
+        self.true_labels = true_labels
         self.stats = {}
 
     def forward(self, logits, labels, num_classes=10, epsilon=None, transition_matrix=None):
@@ -40,6 +40,9 @@ class CalibrationLoss(nn.Module):
             if prop_in_bin.item() > 0 and (self.adaECE or in_bin.sum() > 20):
                 accuracy_in_bin = self._calculate_accuracy_in_bin(in_bin, correctness, num_classes, predictions, labels,
                                                                   epsilon, transition_matrix)
+                if self.true_labels is not None:
+                    true_acc_in_bin = self._calculate_accuracy_in_bin(in_bin, predictions.eq(self.true_labels), num_classes, predictions, self.true_labels,
+                                                                  None, None)
                 avg_confidence_in_bin = confidences[in_bin].mean()
                 cur_ece = torch.abs(avg_confidence_in_bin - accuracy_in_bin) * prop_in_bin
                 ece += cur_ece

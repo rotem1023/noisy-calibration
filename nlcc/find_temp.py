@@ -20,7 +20,7 @@ class FindTemp(nn.Module):
         self.LOGIT = LOGIT
 
     def find_best_T(self, logits, labels, true_labels = None):
-        ece_loss = CalibrationLoss(adaECE=self.adaECE, n_bins=self.n_bins, LOGIT=self.LOGIT)
+        ece_loss = CalibrationLoss(adaECE=self.adaECE, n_bins=self.n_bins, LOGIT=self.LOGIT, true_labels = true_labels)
 
         def eval(x):
             "x ==> temperature T"
