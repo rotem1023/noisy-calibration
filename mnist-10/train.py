@@ -1,7 +1,5 @@
 import numpy as np
 
-
-import wandb
 # pytorch libraries
 import torch
 from torch import optim,nn
@@ -140,8 +138,6 @@ def main(args):
     for lr in [0.000001, 0.000005, 0.00001, 0.00005, 0.0001, 0.0005, 0.001]:
         args.lr = lr
         optimizer = optim.Adam(model.parameters(), lr=args.lr)
-        # with wandb.init(project='ham10000_with_noisy_labels'):
-        #     wandb.config.update(args)
         print ('=== Start Training ===')
         best_model_path = train_model(model = model, 
                                 train_data_loader = train_data_loader, 
@@ -157,7 +153,7 @@ def main(args):
         print ('=== Start Testing ===')
         model = torch.load(best_model_path)
         acc, test_logits = test_model(model, test_data_loader)
-            # wandb.log({'test_accuracy': acc})
+
         val_acc, val_logits= test_model(model, valid_data_loader)
         output_root = '/home/dsi/rotemnizhar/dev/noisy-temperature-scaling/mnist-10/output'
         save__logits('test', test_logits, output_root)

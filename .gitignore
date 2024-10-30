@@ -1,2 +1,9 @@
 *.jpg
 ckpts/
+__pycache__/
+*.pyc
+*.log
+venv/
+pathmnist/
+cxr14/
+noisy_calibration/

@@ -3,6 +3,12 @@ import numpy as np
 from scipy.spatial import distance
 
 
+def _normalize_features(all_fea):
+    all_fea = torch.from_numpy(all_fea)
+    all_fea = torch.cat((all_fea, torch.ones(all_fea.size(0), 1)), 1)
+    all_fea = (all_fea.t() / torch.norm(all_fea, p=2, dim=1)).t()
+    return all_fea.numpy()
+
 def _calc_center_k(k, softmaxes, features):
     '''
     Calculate the center of class k
@@ -56,6 +62,7 @@ def _calc_dist_center(features, centers):
 
 
 def generate_pseudo_labels(noisy_labels, features, n_classes):
+    features = _normalize_features(features)
     # Calculate the softmaxes of the model
     softmaxes = np.zeros((noisy_labels.size, n_classes))
     softmaxes[np.arange(noisy_labels.size), noisy_labels] = 1

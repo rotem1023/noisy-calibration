@@ -71,8 +71,9 @@ def _load_data(dataset, data_type, twenty_two = True):
     data_type_dir = f'{dataset_dir}/{data_type}'
     labels = np.load(f'{data_type_dir}/{data_type}_labels.npy')
     noisy_labels = np.load(f'{data_type_dir}/{data_type}_noisy_labels.npy')
-    # logits = _read_torch_file_as_np(f'{data_type_dir}/{data_type}_logits.pt')
-    logits = np.load(f'{data_type_dir}/{data_type}_logits.npy')
+    logits = _read_torch_file_as_np(f'{data_type_dir}/{data_type}_logits.pt')
+    # logits = np.load(f'{data_type_dir}/{data_type}_logits.npy')
+    predictions = np.argmax(logits, axis=1)
     feature_map_extension = '22k' if twenty_two else '1k'
     features_map = np.load(f'{data_type_dir}/{data_type}_features_map_{feature_map_extension}.npy') 
     n_classes = len(torch.unique(torch.from_numpy(labels)))
@@ -80,12 +81,12 @@ def _load_data(dataset, data_type, twenty_two = True):
     tranistion_matrix = _create_transition_matrix(n_classes, labels, noisy_labels)
     print(f'{data_type} acc noisy labels: {sum(labels==noisy_labels)/len(labels)}')
     print(f'{data_type} acc pseudo labels: {sum(labels==pseudo_labels)/len(labels)}')
+    print(f'{data_type} acc preds: {sum(labels==predictions)/len(labels)}')
     labels_check = np.squeeze(np.load(f'{data_type_dir}/{data_type}_labels_check.npy'))
     print(f'{data_type} check: {sum(labels==labels_check)/len(labels)}')
     return InputData(data_type = data_type, logits=torch.from_numpy(logits), noisy_labels=torch.from_numpy(noisy_labels),
                      pseudo_labels=pseudo_labels, labels=torch.from_numpy(labels), transtion_matrix=tranistion_matrix,
                      n_classes= n_classes)
-    
     
     
 

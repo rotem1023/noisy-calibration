@@ -25,6 +25,7 @@ class FindTemp(nn.Module):
         def eval(x):
             "x ==> temperature T"
             x = torch.from_numpy(x)
+            print(x)
             if (x < 0):
                 return 1
             scaled_logits = logits.float() / x

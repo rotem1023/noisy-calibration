@@ -10,7 +10,7 @@ def get_args():
     parser.add_argument("--n_classes", type=int, default=10, help="number of classes")
 
     # Chexport args
-    parser.add_argument("--n_epochs", type=int, default=20, help="number of epochs of training")
+    parser.add_argument("--n_epochs", type=int, default=5, help="number of epochs of training")
     parser.add_argument("--seed", type=int, default=42, help="seed")
 
     parser.add_argument("--batch_size", type=int, default=32, help="training batch size")
