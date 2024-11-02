@@ -85,7 +85,7 @@ if __name__ == '__main__':
                         default=128,
                         type=int)
     parser.add_argument('--swin22',
-                        default=True,
+                        default=False,
                         help='to name a standard evaluation csv file, named as {flag}_{split}_[AUC]{auc:.3f}_[ACC]{acc:.3f}@{run}.csv',
                         type=bool)
 
