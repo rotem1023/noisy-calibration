@@ -34,10 +34,10 @@ def get_loaders(batch_size = 32):
     test_dataset = datasets.ImageFolder(f'{isic_dir}/test', transform=val_transform)
 
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    train_loader_at_eval = DataLoader(train_eval_dataset, batch_size=batch_size, shuffle=False)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False) 
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
+    train_loader_at_eval = DataLoader(train_eval_dataset, batch_size=batch_size, shuffle=False, num_workers=4)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=2) 
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=2)
         
 
     return train_loader, train_loader_at_eval, val_loader, test_loader
