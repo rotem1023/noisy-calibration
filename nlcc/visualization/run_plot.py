@@ -63,7 +63,7 @@ def cretae_tsne_plots_for_dataset(dataset):
     plot.create_tsne_plot(dataset.dataset_name, x_test, y_test, plot_name, test = True)
 
 
-def run_calibration(dataset):
+def run_calibration(dataset, syn_pl_valid, syn_pl_test):
     calib_test = CalibrationLoss(LOGIT=True, adaECE=adaEce, n_bins=n_bins, true_labels=dataset.test_input_data.labels)
     loss_test = calib_test.forward(dataset.test_input_data.logits, dataset.test_input_data.pseudo_labels, num_classes=dataset.test_input_data.n_classes)
 
@@ -76,7 +76,13 @@ def run_calibration(dataset):
     calib_valid_noisy = CalibrationLoss(LOGIT=True, adaECE=adaEce, n_bins=n_bins, true_labels=dataset.valid_input_data.labels)
     loss_valid_noisy = calib_valid_noisy.forward(dataset.valid_input_data.logits, dataset.valid_input_data.noisy_labels, num_classes=dataset.valid_input_data.n_classes)
 
-    return calib_test.stats, calib_valid.stats, calib_test_noisy.stats, calib_valid_noisy.stats
+    calib_valid_syn = CalibrationLoss(LOGIT=True, adaECE=adaEce, n_bins=n_bins, true_labels=dataset.valid_input_data.labels)
+    loss_valid_syn = calib_valid_syn.forward(dataset.valid_input_data.logits, syn_pl_valid, num_classes=dataset.valid_input_data.n_classes)
+
+    calib_test_syn = CalibrationLoss(LOGIT=True, adaECE=adaEce, n_bins=n_bins, true_labels=dataset.test_input_data.labels)
+    loss_test_syn = calib_test_syn.forward(dataset.test_input_data.logits, syn_pl_test, num_classes=dataset.test_input_data.n_classes)
+
+    return calib_test.stats, calib_valid.stats, calib_test_noisy.stats, calib_valid_noisy.stats, calib_valid_syn.stats, calib_test_syn.stats
 
 
 
@@ -92,12 +98,15 @@ if __name__ == '__main__':
         test_syn_labels = _create_y_tilde_from_transition_matrix(dataset.test_input_data.transtion_matrix, dataset.test_input_data.labels.to(torch.int))
 
         # cretae_tsne_plots_for_dataset(dataset)
-        calib_test_stats, calib_valid_stats, calib_test_noisy_stats, calib_valid_noisy_stats = run_calibration(dataset)
+        calib_test_stats, calib_valid_stats, calib_test_noisy_stats, calib_valid_noisy_stats, calib_valid_syn_stats, calib_test_syn_stats= run_calibration(dataset, valid_syn_labels, test_syn_labels)
+
 
         plot.plot_agreement_explained_over_bins_v2(dataset.dataset_name, calib_test_stats, dataset.dataset_name, 'test', test = True)
         plot.plot_agreement_explained_over_bins_v2(dataset.dataset_name, calib_valid_stats, dataset.dataset_name, 'valid')
         plot.plot_agreement_explained_over_bins_v2(dataset.dataset_name, calib_test_noisy_stats, dataset.dataset_name, 'test_noisy', test=True)
         plot.plot_agreement_explained_over_bins_v2(dataset.dataset_name, calib_valid_noisy_stats, dataset.dataset_name, 'valid_noisy')
+        plot.plot_agreement_explained_over_bins_v2(dataset.dataset_name, calib_test_syn_stats, dataset.dataset_name, 'test_syn', test = True)
+        plot.plot_agreement_explained_over_bins_v2(dataset.dataset_name, calib_valid_syn_stats, dataset.dataset_name, 'valid_syn')
 
         plot.plot_avg_noise_pl_over_bins(calib_valid_stats, dataset.valid_input_data,valid_syn_labels, dataset.dataset_name, "accuracy_pseudo_labels")
         plot.plot_avg_noise_pl_over_bins(calib_test_stats, dataset.test_input_data,test_syn_labels, dataset.dataset_name, "accuracy_pseudo_labels", test=True)
