@@ -1,6 +1,9 @@
 import torch
 import numpy as np
 from scipy.spatial import distance
+from sklearn.cluster import KMeans
+
+
 
 
 def _normalize_features(all_fea):
@@ -76,3 +79,17 @@ def generate_pseudo_labels(noisy_labels, features, n_classes):
     # Assign pseudo labels to the examples
     pseudo_labels = torch.argmin(dist, dim=1)
     return pseudo_labels
+
+
+def generate_pseudo_labels_kmeans(noisy_labels, features, n_classes):
+    features = _normalize_features(features)
+    softmaxes = np.zeros((noisy_labels.size, n_classes))
+    softmaxes[np.arange(noisy_labels.size), noisy_labels] = 1
+    softmaxes = torch.from_numpy(softmaxes)
+    # Calculate the centers of the classes
+    centers = _create_centers(softmaxes, features, n_classes)
+    kmeans = KMeans(n_clusters=n_classes, init=centers, n_init=1, random_state=0, max_iter=1)
+
+    # Fit the model to the data
+    kmeans.fit(features)
+    return torch.from_numpy(kmeans.labels_)

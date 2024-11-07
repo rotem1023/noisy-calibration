@@ -1,7 +1,8 @@
 import os
 import numpy as np
 import torch
-from pseudo_labels_maker import generate_pseudo_labels
+from pseudo_labels_maker import generate_pseudo_labels, generate_pseudo_labels_kmeans
+
 
 class InputData:   
     '''
@@ -78,6 +79,7 @@ def _load_data(dataset, data_type, twenty_two = True):
     features_map = np.load(f'{data_type_dir}/{data_type}_features_map_{feature_map_extension}.npy') 
     n_classes = len(torch.unique(torch.from_numpy(labels)))
     pseudo_labels = generate_pseudo_labels(noisy_labels, features_map, n_classes)
+    # pseudo_labels = generate_pseudo_labels_kmeans(predictions, features_map, n_classes)
     tranistion_matrix = _create_transition_matrix(n_classes, labels, noisy_labels)
     print(f'{data_type} acc noisy labels: {sum(labels==noisy_labels)/len(labels)}')
     print(f'{data_type} acc pseudo labels: {sum(labels==pseudo_labels)/len(labels)}')

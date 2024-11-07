@@ -138,7 +138,7 @@ class CalibrationLoss(nn.Module):
             in_bin = torch.from_numpy(in_bin)
             prop_in_bin = in_bin.float().mean()
             if prop_in_bin.item() > 0 and (self.adaECE or in_bin.sum() > 20):
-                print(f"bin {i}, elements in bin: {in_bin.sum()}")
+                # print(f"bin {i}, elements in bin: {in_bin.sum()}")
                 accuracy_in_bin = self._calculate_accuracy_in_bin(in_bin, correctness, num_classes, predictions, labels,
                                                                   epsilon, transition_matrix)
 
