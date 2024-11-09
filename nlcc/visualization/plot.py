@@ -4,6 +4,7 @@ import pandas as pd
 import os
 import seaborn as sns
 import numpy as np
+import torch
 
 
 def _get_cur_file_path():
@@ -138,23 +139,33 @@ def plot_avg_noise_pl_over_bins(stats, input_data, syn_pl, data_set, plot_name, 
     y= input_data.labels
     noisy_labels = input_data.noisy_labels
     y_tilda = input_data.pseudo_labels
+    prediction = torch.argmax(input_data.logits, dim=1)
     index = stats['indexes']
     bins = sorted(list(index.unique().int()))
     noises = []
-    src_model_noises = []
+    noisy_labels_noises = []
     syn_noises = []
+    prediction_noises = []
+    prediction_noises_noisy = []
     for i in range(len(bins)):
         bin_index = index == bins[i]
 
+        prediction_bin = prediction[bin_index]
         noisy_labels_bin = noisy_labels[bin_index]
         y_tilda_bin = y_tilda[bin_index]
         y_bin = y[bin_index]
 
 
+
         noise = 100*(sum(y_tilda_bin == y_bin) / len(y_tilda_bin))
         noises.append(round(noise.item()))
-        src_model_noise = 100*(sum(noisy_labels_bin == y_bin) / len(noisy_labels_bin))
-        src_model_noises.append(round(src_model_noise.item()))
+        noisy_label_noise = 100*(sum(noisy_labels_bin == y_bin) / len(noisy_labels_bin))
+        noisy_labels_noises.append(round(noisy_label_noise.item()))
+        preds_noise = 100*(sum(prediction_bin == y_bin) / len(prediction_bin))
+        prediction_noises.append(round(preds_noise.item()))
+        preds_noise_noisy = 100*(sum(prediction_bin == y_tilda_bin) / len(prediction_bin))
+        prediction_noises_noisy.append(round(preds_noise_noisy.item()))
+
 
         if syn_pl is not None:
             syn_pl_bin = syn_pl[bin_index]
@@ -175,7 +186,9 @@ def plot_avg_noise_pl_over_bins(stats, input_data, syn_pl, data_set, plot_name, 
     if syn_pl is not None:
         _add_ax_plot(ax,x , syn_noises, color=sns.color_palette(color_palette)[8], label='Synthetic')
     _add_ax_plot(ax, x, noises, label='Enhanced PL', color=sns.color_palette(color_palette)[4])
-    _add_ax_plot(ax,x , src_model_noises, color=sns.color_palette(color_palette)[6], label='PL')
+    _add_ax_plot(ax,x , noisy_labels_noises, color=sns.color_palette(color_palette)[6], label='PL')
+    _add_ax_plot(ax,x , prediction_noises, color=sns.color_palette(color_palette)[3], label='Preds')
+    _add_ax_plot(ax,x , prediction_noises_noisy, color=sns.color_palette(color_palette)[2], label='Preds Noisy')
 
 
     # Label the plot
@@ -199,3 +212,47 @@ def plot_avg_noise_pl_over_bins(stats, input_data, syn_pl, data_set, plot_name, 
     # Show the plot
     plt.show()
     plt.close(fig)
+
+
+def plot_dist_from_closest_center(stats, input_data, data_set, plot_name, test = False):
+    '''
+    The name of the function is misleading.
+    The function plots the accuracy of the pseudo labels and the source model predictions, as well as synthetic pseudo labels over bins of confidence.
+    :param stats: dictionary holds the statistics from the calibration process
+    :param input_data: raw data from the data set
+    :param syn_pl: true if to plot the synthetic pseudo labels
+    :param data_set: name of the data set
+    :param plot_name: name of the plot to save
+    :param year: year of the data set
+    :return:
+    '''
+    y= input_data.labels
+    dist_from_center = input_data.dist_closest_center
+    y_tilda = input_data.pseudo_labels
+    index = stats['indexes']
+
+    correct = y == y_tilda
+
+    bins = sorted(list(index.unique().int()))
+
+    for i in range(len(bins)):
+        bin_index = index == bins[i]
+        dist_bin = dist_from_center[bin_index]
+        correct_bin = correct[bin_index]
+
+        # for each bin create a plot of the distance from the center of the class, color the plot based on the correctness of the pseudo label
+        sns.set_style("whitegrid")
+        color_palette = "Paired"
+
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.scatter(correct_bin, dist_bin, c=correct_bin, cmap='viridis')
+
+        filename = f"{plot_name}_{data_set}_{len(bins)}_bins_{i}_bin.png"
+        dir_to_save = _get_dataset_plots_dir(data_set, test)
+        plt.savefig(f"{dir_to_save}/{filename}", dpi=300, bbox_inches='tight')
+
+        # Show the plot
+        plt.show()
+        plt.close(fig)
+
+

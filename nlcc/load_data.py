@@ -9,7 +9,7 @@ class InputData:
     Class that holds the input data for calibration
     '''
 
-    def __init__(self, data_type, logits, noisy_labels, pseudo_labels, labels, transtion_matrix, n_classes):
+    def __init__(self, data_type, logits, noisy_labels, pseudo_labels, labels, transtion_matrix, n_classes, dist_closest_center):
         self.data_type = data_type
         # logits of the model
         self.logits = logits
@@ -22,6 +22,7 @@ class InputData:
         # tranistion matrix from noisy labels to labels
         self.transtion_matrix  = transtion_matrix
         self.n_classes = n_classes
+        self.dist_closest_center = dist_closest_center
         
 def _get_cur_file_path():
     return f'{os.path.dirname(os.path.abspath(__file__))}'
@@ -78,17 +79,17 @@ def _load_data(dataset, data_type, twenty_two = True):
     feature_map_extension = '22k' if twenty_two else '1k'
     features_map = np.load(f'{data_type_dir}/{data_type}_features_map_{feature_map_extension}.npy') 
     n_classes = len(torch.unique(torch.from_numpy(labels)))
-    pseudo_labels = generate_pseudo_labels(noisy_labels, features_map, n_classes)
+    pseudo_labels, dist_closest_center = generate_pseudo_labels(predictions, features_map, n_classes)
     # pseudo_labels = generate_pseudo_labels_kmeans(predictions, features_map, n_classes)
     tranistion_matrix = _create_transition_matrix(n_classes, labels, noisy_labels)
-    print(f'{data_type} acc noisy labels: {sum(labels==noisy_labels)/len(labels)}')
-    print(f'{data_type} acc pseudo labels: {sum(labels==pseudo_labels)/len(labels)}')
-    print(f'{data_type} acc preds: {sum(labels==predictions)/len(labels)}')
+    print(f'{dataset} {data_type} acc noisy labels: {sum(labels==noisy_labels)/len(labels)}')
+    print(f'{dataset} {data_type} acc pseudo labels: {sum(labels==pseudo_labels)/len(labels)}')
+    print(f'{dataset} {data_type} acc preds: {sum(labels==predictions)/len(labels)}')
     labels_check = np.squeeze(np.load(f'{data_type_dir}/{data_type}_labels_check.npy'))
-    print(f'{data_type} check: {sum(labels==labels_check)/len(labels)}')
+    print(f'{dataset} {data_type} check: {sum(labels==labels_check)/len(labels)}')
     return InputData(data_type = data_type, logits=torch.from_numpy(logits), noisy_labels=torch.from_numpy(noisy_labels),
                      pseudo_labels=pseudo_labels, labels=torch.from_numpy(labels), transtion_matrix=tranistion_matrix,
-                     n_classes= n_classes)
+                     n_classes= n_classes, dist_closest_center=dist_closest_center)
     
     
 

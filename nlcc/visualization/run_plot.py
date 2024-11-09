@@ -92,7 +92,7 @@ if __name__ == '__main__':
     adaEce = True
     datasets = _get_all_datasets()
     for dataset in datasets:
-        print(f"Creating tsne plots for {dataset.dataset_name}")
+        print(f"Creating  plots for {dataset.dataset_name}")
 
         valid_syn_labels = _create_y_tilde_from_transition_matrix(dataset.valid_input_data.transtion_matrix, dataset.valid_input_data.labels.to(torch.int))
         test_syn_labels = _create_y_tilde_from_transition_matrix(dataset.test_input_data.transtion_matrix, dataset.test_input_data.labels.to(torch.int))
@@ -100,14 +100,17 @@ if __name__ == '__main__':
         # cretae_tsne_plots_for_dataset(dataset)
         calib_test_stats, calib_valid_stats, calib_test_noisy_stats, calib_valid_noisy_stats, calib_valid_syn_stats, calib_test_syn_stats= run_calibration(dataset, valid_syn_labels, test_syn_labels)
 
+        # plot.plot_dist_from_closest_center(calib_valid_stats, dataset.valid_input_data, dataset.dataset_name, "dist_from_center")
+        # plot.plot_dist_from_closest_center(calib_test_stats, dataset.test_input_data, dataset.dataset_name, "dist_from_center", test=True)
 
-        plot.plot_agreement_explained_over_bins_v2(dataset.dataset_name, calib_test_stats, dataset.dataset_name, 'test', test = True)
-        plot.plot_agreement_explained_over_bins_v2(dataset.dataset_name, calib_valid_stats, dataset.dataset_name, 'valid')
-        plot.plot_agreement_explained_over_bins_v2(dataset.dataset_name, calib_test_noisy_stats, dataset.dataset_name, 'test_noisy', test=True)
-        plot.plot_agreement_explained_over_bins_v2(dataset.dataset_name, calib_valid_noisy_stats, dataset.dataset_name, 'valid_noisy')
-        plot.plot_agreement_explained_over_bins_v2(dataset.dataset_name, calib_test_syn_stats, dataset.dataset_name, 'test_syn', test = True)
-        plot.plot_agreement_explained_over_bins_v2(dataset.dataset_name, calib_valid_syn_stats, dataset.dataset_name, 'valid_syn')
 
+    # plot.plot_agreement_explained_over_bins_v2(dataset.dataset_name, calib_test_stats, dataset.dataset_name, 'test', test = True)
+    #     plot.plot_agreement_explained_over_bins_v2(dataset.dataset_name, calib_valid_stats, dataset.dataset_name, 'valid')
+    #     plot.plot_agreement_explained_over_bins_v2(dataset.dataset_name, calib_test_noisy_stats, dataset.dataset_name, 'test_noisy', test=True)
+    #     plot.plot_agreement_explained_over_bins_v2(dataset.dataset_name, calib_valid_noisy_stats, dataset.dataset_name, 'valid_noisy')
+    #     plot.plot_agreement_explained_over_bins_v2(dataset.dataset_name, calib_test_syn_stats, dataset.dataset_name, 'test_syn', test = True)
+    #     plot.plot_agreement_explained_over_bins_v2(dataset.dataset_name, calib_valid_syn_stats, dataset.dataset_name, 'valid_syn')
+        #
         plot.plot_avg_noise_pl_over_bins(calib_valid_stats, dataset.valid_input_data,valid_syn_labels, dataset.dataset_name, "accuracy_pseudo_labels")
         plot.plot_avg_noise_pl_over_bins(calib_test_stats, dataset.test_input_data,test_syn_labels, dataset.dataset_name, "accuracy_pseudo_labels", test=True)
 

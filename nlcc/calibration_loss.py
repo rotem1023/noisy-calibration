@@ -93,7 +93,6 @@ class CalibrationLoss(nn.Module):
     #         in_bin = confidences.gt(bin_lower.item()) * confidences.le(bin_upper.item())
     #         prop_in_bin = in_bin.float().mean()
     #         if prop_in_bin.item() > 0 and (self.adaECE or in_bin.sum() > 20):
-    #             print(f"bin {i}, elements in bin: {in_bin.sum()}")
     #             accuracy_in_bin = self._calculate_accuracy_in_bin(in_bin, correctness, num_classes, predictions, labels,
     #                                                               epsilon, transition_matrix)
     #
@@ -137,17 +136,22 @@ class CalibrationLoss(nn.Module):
             in_bin[bin_lower:bin_upper] = True
             in_bin = torch.from_numpy(in_bin)
             prop_in_bin = in_bin.float().mean()
+
+            # estimate_acc_func = self._create_estimate_acc_function(bin_lowers, bin_uppers, sorted_indices, sorted_correctness)
+
             if prop_in_bin.item() > 0 and (self.adaECE or in_bin.sum() > 20):
-                # print(f"bin {i}, elements in bin: {in_bin.sum()}")
-                accuracy_in_bin = self._calculate_accuracy_in_bin(in_bin, correctness, num_classes, predictions, labels,
+                accuracy_in_bin = self._calculate_accuracy_in_bin(in_bin, sorted_correctness, num_classes, sorted_predictions, sorted_labels,
                                                                   epsilon, transition_matrix)
+
+                # if self.true_labels is not None:
+                #     accuracy_in_bin = estimate_acc_func(i)
 
                 avg_confidence_in_bin = sorted_confidences[in_bin].mean()
                 cur_ece = torch.abs(avg_confidence_in_bin - accuracy_in_bin) * prop_in_bin
                 ece += cur_ece
                 if self.true_labels is not None:
                     sorted_true_labels = self.true_labels[sorted_indices]
-                    true_acc_in_bin = self._calculate_accuracy_in_bin(in_bin, predictions.eq(self.true_labels), num_classes, predictions, self.true_labels,
+                    true_acc_in_bin = self._calculate_accuracy_in_bin(in_bin, sorted_predictions.eq(sorted_true_labels), num_classes, predictions, self.true_labels,
                                                                       None, None)
                     calc_accuracy(i, sorted_predictions, sorted_true_labels, sorted_labels, in_bin, avg_confidence_in_bin, self.stats)
                     indexes_in_bin = sorted_indices[in_bin]
@@ -155,6 +159,25 @@ class CalibrationLoss(nn.Module):
         self.stats['indexes'] = indexes
         return ece
 
+    def _create_estimate_acc_function(self, bin_lowers, bin_uppers, sorted_indices, correctness):
+        lowest_acc = self._estimate_bin(bin_lowers, bin_uppers, sorted_indices, correctness, 0)
+        highest_acc = self._estimate_bin(bin_lowers, bin_uppers, sorted_indices, correctness, len(bin_lowers)-1)
+        b= lowest_acc
+        a = (highest_acc - lowest_acc) / (len(bin_lowers)-1)
+        return lambda i: a*i + b
+
+
+    def _estimate_bin(self,bin_lowers, bin_uppers, sorted_indices, correctness, i):
+        bin_lower = bin_lowers[i]
+        bin_upper = bin_uppers[i]
+
+        # Calculated |confidence - accuracy| in each bin
+        in_bin = np.zeros(len(sorted_indices), dtype=bool)
+        in_bin[bin_lower:bin_upper] = True
+        in_bin = torch.from_numpy(in_bin)
+        accuracy_in_bin = correctness[in_bin].float().mean()
+        accuracy_in_bin = self._normalize_acc(accuracy_in_bin)
+        return accuracy_in_bin
 
     def forward_given_acc(self, logits, acc):
         if self.LOGIT:

@@ -63,6 +63,14 @@ def _calc_dist_center(features, centers):
     return torch.from_numpy(distances)
 
 
+def _extract_i_th_distance(dist, i):
+    if i < 1 or i > dist.size(1):
+        raise ValueError("i must be between 1 and the number of centers (inclusive)")
+
+    _, indices = torch.topk(dist, k=i, dim=1, largest=False)
+    pseudo_labels = indices[:, -1]  # Select the i-th smallest distance label for each point
+    dist_i = dist.gather(1, indices[:, -1].unsqueeze(1)).squeeze(1)
+    return dist_i
 
 def generate_pseudo_labels(noisy_labels, features, n_classes):
     features = _normalize_features(features)
@@ -78,7 +86,9 @@ def generate_pseudo_labels(noisy_labels, features, n_classes):
     dist = _calc_dist_center(features, centers)
     # Assign pseudo labels to the examples
     pseudo_labels = torch.argmin(dist, dim=1)
-    return pseudo_labels
+    dist_min = _extract_i_th_distance(dist, 1)
+    second_dist = _extract_i_th_distance(dist, 2)
+    return pseudo_labels, second_dist-dist_min
 
 
 def generate_pseudo_labels_kmeans(noisy_labels, features, n_classes):
