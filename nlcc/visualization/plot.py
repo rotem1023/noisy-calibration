@@ -141,6 +141,7 @@ def plot_avg_noise_pl_over_bins(stats, input_data, syn_pl, data_set, plot_name, 
     y_tilda = input_data.pseudo_labels
     prediction = torch.argmax(input_data.logits, dim=1)
     index = stats['indexes']
+    confidences = sorted(list(stats['confidence'].values()))
     bins = sorted(list(index.unique().int()))
     noises = []
     noisy_labels_noises = []
@@ -163,7 +164,7 @@ def plot_avg_noise_pl_over_bins(stats, input_data, syn_pl, data_set, plot_name, 
         noisy_labels_noises.append(round(noisy_label_noise.item()))
         preds_noise = 100*(sum(prediction_bin == y_bin) / len(prediction_bin))
         prediction_noises.append(round(preds_noise.item()))
-        preds_noise_noisy = 100*(sum(prediction_bin == y_tilda_bin) / len(prediction_bin))
+        preds_noise_noisy = 100*(sum(prediction_bin == noisy_labels_bin) / len(prediction_bin))
         prediction_noises_noisy.append(round(preds_noise_noisy.item()))
 
 
@@ -176,6 +177,7 @@ def plot_avg_noise_pl_over_bins(stats, input_data, syn_pl, data_set, plot_name, 
     bar_width = 0.35  # Adjusted width of the bars
     spacing = 0.1  # Space between different x labels
     x = np.arange(len(bins))
+    # x = confidences
 
     sns.set_style("whitegrid")
     color_palette = "Paired"
@@ -183,12 +185,12 @@ def plot_avg_noise_pl_over_bins(stats, input_data, syn_pl, data_set, plot_name, 
     fig, ax = plt.subplots(figsize=(10, 6))
 
     # Plot bars
-    if syn_pl is not None:
-        _add_ax_plot(ax,x , syn_noises, color=sns.color_palette(color_palette)[8], label='Synthetic')
-    _add_ax_plot(ax, x, noises, label='Enhanced PL', color=sns.color_palette(color_palette)[4])
-    _add_ax_plot(ax,x , noisy_labels_noises, color=sns.color_palette(color_palette)[6], label='PL')
-    _add_ax_plot(ax,x , prediction_noises, color=sns.color_palette(color_palette)[3], label='Preds')
-    _add_ax_plot(ax,x , prediction_noises_noisy, color=sns.color_palette(color_palette)[2], label='Preds Noisy')
+    # if syn_pl is not None:
+    #     _add_ax_plot(ax,x , syn_noises, color=sns.color_palette(color_palette)[8], label='Synthetic')
+    # _add_ax_plot(ax, x, noises, label='Enhanced PL', color=sns.color_palette(color_palette)[4])
+    # _add_ax_plot(ax,x , noisy_labels_noises, color=sns.color_palette(color_palette)[6], label='PL')
+    _add_ax_plot(ax,x , prediction_noises, color=sns.color_palette(color_palette)[3], label=r'$A_i$')
+    _add_ax_plot(ax,x , prediction_noises_noisy, color=sns.color_palette(color_palette)[2], label=r'$\tilde{A}_i$')
 
 
     # Label the plot
@@ -198,7 +200,7 @@ def plot_avg_noise_pl_over_bins(stats, input_data, syn_pl, data_set, plot_name, 
     ax.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
 
     # Set y-axis limits
-    ax.set_ylim(0, 100)
+    ax.set_ylim(0, 101)
     plt.yticks(fontsize=16)
     plt.xticks(fontsize=16)
 
