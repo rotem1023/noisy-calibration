@@ -111,9 +111,10 @@ if __name__ == '__main__':
     #     plot.plot_agreement_explained_over_bins_v2(dataset.dataset_name, calib_test_syn_stats, dataset.dataset_name, 'test_syn', test = True)
     #     plot.plot_agreement_explained_over_bins_v2(dataset.dataset_name, calib_valid_syn_stats, dataset.dataset_name, 'valid_syn')
         #
-        plot.plot_avg_noise_pl_over_bins(calib_valid_stats, dataset.valid_input_data,valid_syn_labels, dataset.dataset_name, "accuracy_pseudo_labels")
-        plot.plot_avg_noise_pl_over_bins(calib_test_stats, dataset.test_input_data,test_syn_labels, dataset.dataset_name, "accuracy_pseudo_labels", test=True)
-
+        plot.plot_avg_noise_pl_over_bins(calib_valid_stats, dataset.valid_input_data,valid_syn_labels, dataset.dataset_name, "accuracy_estimation")
+        plot.plot_avg_noise_pl_over_bins(calib_test_stats, dataset.test_input_data,test_syn_labels, dataset.dataset_name, "accuracy_estimation", test=True)
+        plot.plot_avg_acc_pl_over_bins(calib_valid_stats, dataset.valid_input_data,valid_syn_labels, dataset.dataset_name, "accuracy_pseudo_labels")
+        plot.plot_avg_acc_pl_over_bins(calib_test_stats, dataset.test_input_data,test_syn_labels, dataset.dataset_name, "accuracy_pseudo_labels", test=True)
 
 
     

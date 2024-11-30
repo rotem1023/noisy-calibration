@@ -1,7 +1,8 @@
 import os
 import numpy as np
+import pandas as pd
 import torch
-from pseudo_labels_maker import generate_pseudo_labels, generate_pseudo_labels_kmeans
+from pseudo_labels_maker import *
 
 
 class InputData:   
@@ -9,7 +10,7 @@ class InputData:
     Class that holds the input data for calibration
     '''
 
-    def __init__(self, data_type, logits, noisy_labels, pseudo_labels, labels, transtion_matrix, n_classes, dist_closest_center):
+    def __init__(self, data_type, logits, noisy_labels, pseudo_labels, labels, transtion_matrix, n_classes, dist_closest_center, relevant_indexes):
         self.data_type = data_type
         # logits of the model
         self.logits = logits
@@ -23,6 +24,8 @@ class InputData:
         self.transtion_matrix  = transtion_matrix
         self.n_classes = n_classes
         self.dist_closest_center = dist_closest_center
+
+        self.relevant_indexes = relevant_indexes
         
 def _get_cur_file_path():
     return f'{os.path.dirname(os.path.abspath(__file__))}'
@@ -67,6 +70,14 @@ def _create_transition_matrix(n_classes, labels, noisy_labels):
 
     return cm_normalized
 
+
+def tmp(labels, noisy_labels, labels_count, k):
+    indexes = np.where(labels_count > k)[0]
+    noisy_labels = noisy_labels[indexes]
+    labels = labels[indexes]
+    return (labels == noisy_labels).sum() / len(labels)
+
+
 def _load_data(dataset, data_type, twenty_two = True):
     data_dir = _get_data_dir()
     dataset_dir = f'{data_dir}/{dataset}'
@@ -87,9 +98,11 @@ def _load_data(dataset, data_type, twenty_two = True):
     print(f'{dataset} {data_type} acc preds: {sum(labels==predictions)/len(labels)}')
     labels_check = np.squeeze(np.load(f'{data_type_dir}/{data_type}_labels_check.npy'))
     print(f'{dataset} {data_type} check: {sum(labels==labels_check)/len(labels)}')
+    relevant_indexes = generate_agree_close_neighbors(features_map, noisy_labels)
+    print(f'{dataset} {data_type} acc relevant indexes: {sum(labels[relevant_indexes]==noisy_labels[relevant_indexes])/len(relevant_indexes)}')
     return InputData(data_type = data_type, logits=torch.from_numpy(logits), noisy_labels=torch.from_numpy(noisy_labels),
                      pseudo_labels=pseudo_labels, labels=torch.from_numpy(labels), transtion_matrix=tranistion_matrix,
-                     n_classes= n_classes, dist_closest_center=dist_closest_center)
+                     n_classes= n_classes, dist_closest_center=dist_closest_center, relevant_indexes=relevant_indexes)
     
     
 

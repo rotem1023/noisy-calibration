@@ -65,12 +65,13 @@ def calc_accuracy(bin_num, predictions, true_labels, labels, in_bin,confidence, 
 
 
 class CalibrationLoss(nn.Module):
-    def __init__(self, n_bins=15, LOGIT=True, adaECE=False, true_labels= None):
+    def __init__(self, n_bins=15, LOGIT=True, adaECE=False, true_labels= None, relevant_indexes = None):
         super(CalibrationLoss, self).__init__()
         self.nbins = n_bins
         self.LOGIT = LOGIT
         self.adaECE = adaECE
         self.true_labels = true_labels
+        self.relevant_indexes = relevant_indexes
         self.stats = {}
 
     # def forward(self, logits, labels, num_classes=10, epsilon=None, transition_matrix=None):
@@ -110,10 +111,11 @@ class CalibrationLoss(nn.Module):
             softmaxes = F.softmax(logits, dim=1)
         else:
             softmaxes = logits
+        if self.true_labels is not None and self.relevant_indexes is not None:
+            print(f'acc relevant indexes: {sum(labels[self.relevant_indexes]==self.true_labels[self.relevant_indexes])/len(self.relevant_indexes)}')
         confidences, predictions = torch.max(softmaxes, 1)
         correctness = predictions.eq(labels)
         confidences[confidences == 1] = 0.999999
-        bin_lowers, bin_uppers = self._claculate_bin_boundaries(confidences)
 
         ece = torch.zeros(1, device=logits.device)
 
@@ -134,29 +136,54 @@ class CalibrationLoss(nn.Module):
             # Calculated |confidence - accuracy| in each bin
             in_bin = np.zeros(len(sorted_indices), dtype=bool)
             in_bin[bin_lower:bin_upper] = True
-            in_bin = torch.from_numpy(in_bin)
-            prop_in_bin = in_bin.float().mean()
-
-            # estimate_acc_func = self._create_estimate_acc_function(bin_lowers, bin_uppers, sorted_indices, sorted_correctness)
-
-            if prop_in_bin.item() > 0 and (self.adaECE or in_bin.sum() > 20):
-                accuracy_in_bin = self._calculate_accuracy_in_bin(in_bin, sorted_correctness, num_classes, sorted_predictions, sorted_labels,
-                                                                  epsilon, transition_matrix)
-
-                # if self.true_labels is not None:
-                #     accuracy_in_bin = estimate_acc_func(i)
-
-                avg_confidence_in_bin = sorted_confidences[in_bin].mean()
-                cur_ece = torch.abs(avg_confidence_in_bin - accuracy_in_bin) * prop_in_bin
+            if self.relevant_indexes is not None:
+                sorted_indices_in_bin = sorted_indices[in_bin]
+                relevant_indexes_in_bin = sorted_indices_in_bin[torch.isin(sorted_indices_in_bin, self.relevant_indexes)]
+                conf_in_bin = confidences[sorted_indices_in_bin].mean()
+                acc_in_bin = correctness[relevant_indexes_in_bin].sum()/len(relevant_indexes_in_bin)
+                cur_ece = torch.abs(conf_in_bin - acc_in_bin) * (sum(in_bin)/len(correctness))
                 ece += cur_ece
-                if self.true_labels is not None:
-                    sorted_true_labels = self.true_labels[sorted_indices]
-                    true_acc_in_bin = self._calculate_accuracy_in_bin(in_bin, sorted_predictions.eq(sorted_true_labels), num_classes, predictions, self.true_labels,
-                                                                      None, None)
-                    calc_accuracy(i, sorted_predictions, sorted_true_labels, sorted_labels, in_bin, avg_confidence_in_bin, self.stats)
-                    indexes_in_bin = sorted_indices[in_bin]
-                    indexes[indexes_in_bin] = i
-        self.stats['indexes'] = indexes
+                if (self.true_labels is not None):
+                    relevant_true_labels = self.true_labels[relevant_indexes_in_bin]
+                    relevant_noisy_labels = labels[relevant_indexes_in_bin]
+                    true_labels_in_bin = self.true_labels[sorted_indices_in_bin]
+                    predictions_in_bin = predictions[sorted_indices_in_bin]
+                    correctness_in_bin = predictions_in_bin.eq(true_labels_in_bin)
+                    accuracy_in_bin = correctness_in_bin.float().mean()
+                    relevant_noisy_acc = (relevant_noisy_labels == relevant_true_labels).float().mean()
+
+                    # Create a mask for elements not in indices_to_exclude
+                    mask = torch.ones(labels.size(0), dtype=torch.bool)
+                    mask[relevant_indexes_in_bin] = False
+
+                    # Filter the data using the mask
+                    filtered_data = correctness[mask]
+                    not_noisy_acc = (filtered_data).float().mean()
+
+                    # print(f"true accuracy in bin {i} is {accuracy_in_bin}, relevant pl accuracy is: {relevant_noisy_acc}")
+                    print(f"bin {i} has {len(relevant_indexes_in_bin)} relevant indexes, estimate accuracy is {acc_in_bin}, true accuracy: {accuracy_in_bin}, pl accuracy: {relevant_noisy_acc}, other index acc est: {not_noisy_acc}, confidence is {conf_in_bin}")
+            else:
+                in_bin = torch.from_numpy(in_bin)
+                prop_in_bin = in_bin.float().mean()
+
+                # estimate_acc_func = self._create_estimate_acc_function(bin_lowers, bin_uppers, sorted_indices, sorted_correctness)
+
+                if prop_in_bin.item() > 0 and (self.adaECE or in_bin.sum() > 20):
+                    accuracy_in_bin = self._calculate_accuracy_in_bin(in_bin, sorted_correctness, num_classes, sorted_predictions, sorted_labels,
+                                                                      epsilon, transition_matrix)
+
+
+                    avg_confidence_in_bin = sorted_confidences[in_bin].mean()
+                    cur_ece = torch.abs(avg_confidence_in_bin - accuracy_in_bin) * prop_in_bin
+                    ece += cur_ece
+                    if self.true_labels is not None:
+                        sorted_true_labels = self.true_labels[sorted_indices]
+                        true_acc_in_bin = self._calculate_accuracy_in_bin(in_bin, sorted_predictions.eq(sorted_true_labels), num_classes, predictions, self.true_labels,
+                                                                          None, None)
+                        calc_accuracy(i, sorted_predictions, sorted_true_labels, sorted_labels, in_bin, avg_confidence_in_bin, self.stats)
+                        indexes_in_bin = sorted_indices[in_bin]
+                        indexes[indexes_in_bin] = i
+            self.stats['indexes'] = indexes
         return ece
 
     def _create_estimate_acc_function(self, bin_lowers, bin_uppers, sorted_indices, correctness):

@@ -216,6 +216,85 @@ def plot_avg_noise_pl_over_bins(stats, input_data, syn_pl, data_set, plot_name, 
     plt.close(fig)
 
 
+def plot_avg_acc_pl_over_bins(stats, input_data, syn_pl, data_set, plot_name, test = False):
+    y= input_data.labels
+    noisy_labels = input_data.noisy_labels
+    y_tilda = input_data.pseudo_labels
+    prediction = torch.argmax(input_data.logits, dim=1)
+    index = stats['indexes']
+    confidences = sorted(list(stats['confidence'].values()))
+    bins = sorted(list(index.unique().int()))
+    noises = []
+    noisy_labels_noises = []
+    syn_noises = []
+    prediction_noises = []
+    prediction_noises_noisy = []
+    for i in range(len(bins)):
+        bin_index = index == bins[i]
+
+        prediction_bin = prediction[bin_index]
+        noisy_labels_bin = noisy_labels[bin_index]
+        y_tilda_bin = y_tilda[bin_index]
+        y_bin = y[bin_index]
+
+
+
+        noise = 100*(sum(y_tilda_bin == y_bin) / len(y_tilda_bin))
+        noises.append(round(noise.item()))
+        noisy_label_noise = 100*(sum(noisy_labels_bin == y_bin) / len(noisy_labels_bin))
+        noisy_labels_noises.append(round(noisy_label_noise.item()))
+        preds_noise = 100*(sum(prediction_bin == y_bin) / len(prediction_bin))
+        prediction_noises.append(round(preds_noise.item()))
+        preds_noise_noisy = 100*(sum(prediction_bin == noisy_labels_bin) / len(prediction_bin))
+        prediction_noises_noisy.append(round(preds_noise_noisy.item()))
+
+
+        if syn_pl is not None:
+            syn_pl_bin = syn_pl[bin_index]
+            syn_noise = 100*(sum(syn_pl_bin == y_bin) / len(syn_pl_bin))
+            syn_noises.append(round(syn_noise.item()))
+
+    # Set up bar plot parameters
+    bar_width = 0.35  # Adjusted width of the bars
+    spacing = 0.1  # Space between different x labels
+    x = np.arange(len(bins))
+    # x = confidences
+
+    sns.set_style("whitegrid")
+    color_palette = "Paired"
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # Plot bars
+    if syn_pl is not None:
+        _add_ax_plot(ax,x , syn_noises, color=sns.color_palette(color_palette)[8], label='Synthetic')
+    _add_ax_plot(ax, x, noises, label='Enhanced PL', color=sns.color_palette(color_palette)[4])
+    _add_ax_plot(ax,x , noisy_labels_noises, color=sns.color_palette(color_palette)[6], label='PL')
+
+
+
+    # Label the plot
+    _add_axes_labels(ax, 'Confidence Bins (lowest to highest)', 'Accuracy')
+
+    ax.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
+
+    # Set y-axis limits
+    ax.set_ylim(0, 101)
+    plt.yticks(fontsize=16)
+    plt.xticks(fontsize=16)
+
+    plt.tight_layout()
+
+    # Save the plot
+    filename = f"{plot_name}_{data_set}_{len(bins)}_bins.png"
+    dir_to_save = _get_dataset_plots_dir(data_set, test)
+    plt.savefig(f"{dir_to_save}/{filename}", dpi=300, bbox_inches='tight')
+
+    # Show the plot
+    plt.show()
+    plt.close(fig)
+
+
 def plot_dist_from_closest_center(stats, input_data, data_set, plot_name, test = False):
     '''
     The name of the function is misleading.

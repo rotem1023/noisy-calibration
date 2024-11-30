@@ -72,6 +72,64 @@ def _extract_i_th_distance(dist, i):
     dist_i = dist.gather(1, indices[:, -1].unsqueeze(1)).squeeze(1)
     return dist_i
 
+
+def _calc_pairwize_distance(features):
+    features = torch.from_numpy(features)
+    diffs = features.unsqueeze(1) - features.unsqueeze(0)
+
+    # Compute squared distances and take the square root to get Euclidean distances
+    distances = torch.norm(diffs, dim=-1)
+    return distances
+
+def _calc_pairwize_distance(features):
+    features = torch.from_numpy(features)
+
+    # Compute squared norms for all rows
+    norms = torch.sum(features**2, dim=1, keepdim=True)  # Shape: (N, 1)
+
+    # Compute pairwise squared distances
+    squared_distances = norms + norms.T - 2 * features @ features.T
+
+    # Avoid numerical instability (e.g., due to negative values from precision issues)
+    squared_distances = torch.clamp(squared_distances, min=0.0)
+
+    # Compute Euclidean distances
+    distances = torch.sqrt(squared_distances)
+    return distances
+
+def _find_agree_close_neighbors(distances, labels):
+    n = len(labels)
+    unique_counts = np.unique(labels, return_counts=True)[1]
+    sorted_distances, sorted_indices = torch.sort(distances, dim=1)
+    # Count closest neighbors with the same label
+    same_label_counts = []
+    for i in range(len(labels)):
+        # Get the sorted indices and labels for neighbors
+        neighbor_indices = sorted_indices[i, 1:]  # Exclude self (index 0)
+        neighbor_labels = labels[neighbor_indices]
+
+        # Count neighbors with the same label as the current vector
+        count = 0
+        for label in neighbor_labels:
+            if label == labels[i]:  # Check if the label matches
+                count += 1
+            else:
+                break  # Stop when a different label is encountered
+        same_label_counts.append(count* (1-(unique_counts[labels[i]]/n)))
+
+    same_label_counts = torch.tensor(same_label_counts)
+    return same_label_counts.numpy()
+
+
+def generate_agree_close_neighbors(features, labels):
+    distances = _calc_pairwize_distance(features)
+    closest_neighbors_agree_counts = _find_agree_close_neighbors(distances, labels)
+    k = np.median(closest_neighbors_agree_counts)
+    indexes = np.where(closest_neighbors_agree_counts > k)[0]
+    return torch.from_numpy(indexes)
+
+
+
 def generate_pseudo_labels(noisy_labels, features, n_classes):
     features = _normalize_features(features)
     # Calculate the softmaxes of the model

@@ -1,0 +1,16 @@
+{
+  "T": {
+    "Uncalibrated": 1,
+    "TS-Clean": 0.98,
+    "Noisy-TS": 1.56,
+    "NTS": 1.03,
+    "NLCC": 1.02
+  },
+  "adaECE": {
+    "Uncalibrated": 1.4,
+    "TS-Clean": 1.35,
+    "Noisy-TS": 11.61,
+    "NTS": 1.72,
+    "NLCC": 1.56
+  }
+}
