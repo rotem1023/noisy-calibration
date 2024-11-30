@@ -65,7 +65,7 @@ def calc_accuracy(bin_num, predictions, true_labels, labels, in_bin, confidence,
 
 
 def _print_stats_with_indexes(relevant_indexes_in_bin, true_labels, noisy_labels, predictions, sorted_indices_in_bin,
-                              correctness, i, acc_in_bin, conf_in_bin):
+                              correctness, i, est_acc_in_bin, conf_in_bin):
     relevant_true_labels = true_labels[relevant_indexes_in_bin]
     relevant_noisy_labels = noisy_labels[relevant_indexes_in_bin]
     true_labels_in_bin = true_labels[sorted_indices_in_bin]
@@ -77,14 +77,19 @@ def _print_stats_with_indexes(relevant_indexes_in_bin, true_labels, noisy_labels
     # Create a mask for elements not in indices_to_exclude
     mask = torch.ones(noisy_labels.size(0), dtype=torch.bool)
     mask[relevant_indexes_in_bin] = False
+    mask = mask[sorted_indices_in_bin]
 
     # Filter the data using the mask
-    filtered_data = correctness[mask]
+    filtered_data = correctness_in_bin[mask]
     not_noisy_acc = (filtered_data).float().mean()
+
+    true_acc_in_relevant_indexes = (relevant_true_labels == predictions[relevant_indexes_in_bin]).float().mean()
+    true_acc_not_in_relevant_indexes = (true_labels_in_bin[mask] == predictions_in_bin[mask]).float().mean()
+
 
     # print(f"true accuracy in bin {i} is {accuracy_in_bin}, relevant pl accuracy is: {relevant_noisy_acc}")
     print(
-        f"bin {i} has {len(relevant_indexes_in_bin)} relevant indexes, estimate accuracy is {acc_in_bin}, true accuracy: {accuracy_in_bin}, pl accuracy: {relevant_noisy_acc}, other index acc est: {not_noisy_acc}, confidence is {conf_in_bin}")
+        f"bin {i} has {len(relevant_indexes_in_bin)} relevant indexes, estimate accuracy is {est_acc_in_bin}, true accuracy: {accuracy_in_bin}, pl accuracy: {relevant_noisy_acc}, other index acc est: {not_noisy_acc}, confidence is {conf_in_bin}, true acc in relevant indexes: {true_acc_in_relevant_indexes}, true acc not in relevant indexes: {true_acc_not_in_relevant_indexes}")
 
 
 class CalibrationLoss(nn.Module):
@@ -213,6 +218,7 @@ class CalibrationLoss(nn.Module):
 
             sorted_indices_in_bin = sorted_indices[in_bin]
             relevant_indexes_in_bin = sorted_indices_in_bin[torch.isin(sorted_indices_in_bin, relevant_indexes)]
+            not_relevant_indexes_in_bin = sorted_indices_in_bin[~torch.isin(sorted_indices_in_bin, relevant_indexes)]
             conf_in_bin = confidences[sorted_indices_in_bin].mean()
             acc_in_bin = correctness[relevant_indexes_in_bin].sum() / len(relevant_indexes_in_bin)
             cur_ece = torch.abs(conf_in_bin - acc_in_bin) * (sum(in_bin) / len(correctness))
