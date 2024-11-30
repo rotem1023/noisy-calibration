@@ -58,7 +58,7 @@ def run_calibration_methods(valid_input_data, test_input_data, n_bins, adaECE_ca
         print("finish nts")
         
     # nlcc
-    T =  calib_model.find_best_T(valid_input_data.logits.clone().detach(), valid_input_data.noisy_labels.clone().detach(), relevant_indexes=valid_input_data.relevant_indexes, true_labels = valid_input_data.labels).item()
+    T =  calib_model.find_best_T_with_indexes(valid_input_data.logits.clone().detach(), valid_input_data.noisy_labels.clone().detach(), relevant_indexes=valid_input_data.relevant_indexes, true_labels = valid_input_data.labels).item()
     output_loss[CalibrationMethodName.NLCC.value] = calc_calibration_loss_with_temp(ece_loss, test_input_data, T)
     output_t[CalibrationMethodName.NLCC.value] = T
     print("finish nlcc")

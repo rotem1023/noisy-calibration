@@ -19,8 +19,8 @@ class FindTemp(nn.Module):
         self.n_bins = n_bins
         self.LOGIT = LOGIT
 
-    def find_best_T(self, logits, labels, true_labels = None, relevant_indexes = None):
-        ece_loss = CalibrationLoss(adaECE=self.adaECE, n_bins=self.n_bins, LOGIT=self.LOGIT, true_labels = true_labels, relevant_indexes = relevant_indexes)
+    def find_best_T(self, logits, labels, true_labels = None):
+        ece_loss = CalibrationLoss(adaECE=self.adaECE, n_bins=self.n_bins, LOGIT=self.LOGIT, true_labels = true_labels)
 
         def eval(x):
             "x ==> temperature T"
@@ -29,6 +29,19 @@ class FindTemp(nn.Module):
                 return 1
             scaled_logits = logits.float() / x
             return ece_loss.forward(scaled_logits, labels, self.n_classes)
+
+        return self._calc_optimal_T(eval)
+
+    def find_best_T_with_indexes(self, logits, labels, true_labels = None, relevant_indexes = None):
+        ece_loss = CalibrationLoss(adaECE=self.adaECE, n_bins=self.n_bins, LOGIT=self.LOGIT, true_labels = true_labels)
+
+        def eval(x):
+            "x ==> temperature T"
+            x = torch.from_numpy(x)
+            if (x < 0):
+                return 1
+            scaled_logits = logits.float() / x
+            return ece_loss.forward_with_indexes(scaled_logits, labels, relevant_indexes, self.n_classes)
 
         return self._calc_optimal_T(eval)
 
