@@ -155,7 +155,7 @@ def train(model, images, labels, num_epochs, batch_size, target_acc):
             cur_correct = (predicted == labels_batch).sum().item()
             correct += cur_correct
             print(f'batch [{i}/{num_batches}], Loss: {loss.item():.4f}, Accuracy: {((predicted == labels_batch).sum().item()/batch_size):.2f}%')
-            if i> num_batches/25:
+            if (i> num_batches/64):
                 break
 
         # Calculate overall accuracy for the epoch
@@ -170,7 +170,7 @@ def train(model, images, labels, num_epochs, batch_size, target_acc):
             break
 
 
-def predict_and_save(model, loader, loader_name, device):
+def predict_and_save(model, loader, loader_name, device, acc):
     model.eval()  # Set the model to evaluation mode
     all_preds = []
     all_labels = []
@@ -201,9 +201,9 @@ def predict_and_save(model, loader, loader_name, device):
     current_dir = os.path.dirname(os.path.abspath(__file__))
     outputdir = f'{current_dir}/output'
     os.makedirs(outputdir, exist_ok=True) 
-    np.save(f"{outputdir}/{loader_name}_noisy_labels.npy", all_preds)
-    np.save(f"{outputdir}/{loader_name}_labels.npy", all_labels)
-    np.save(f"{outputdir}/{loader_name}_logits.npy", all_outputs)
+    np.save(f"{outputdir}/{loader_name}_noisy_labels_acc_{acc}.npy", all_preds)
+    np.save(f"{outputdir}/{loader_name}_labels_acc_{acc}.npy", all_labels)
+    np.save(f"{outputdir}/{loader_name}_logits_acc_{acc}.npy", all_outputs)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -220,7 +220,7 @@ if __name__ == '__main__':
                         default='0',
                         type=str)
     parser.add_argument('--batch_size',
-                        default=256,
+                        default=32,
                         type=int)
 
     
@@ -234,7 +234,7 @@ if __name__ == '__main__':
     num_epochs = args.num_epochs
 
     
-    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = ConvNet()
     model = model.to(device)
     train_loader,train_loader_at_eval, val_loader, test_loader = get_loaders(batch_size=args.batch_size)
@@ -242,9 +242,9 @@ if __name__ == '__main__':
     
     train(model, x, labels, num_epochs, batch_size, args.acc)
     
-    predict_and_save(model, train_loader_at_eval, 'train', device)
-    predict_and_save(model, val_loader, 'valid', device)
-    predict_and_save(model, test_loader, 'test', device)
+    predict_and_save(model, train_loader_at_eval, 'train', device, args.acc)
+    predict_and_save(model, val_loader, 'valid', device, args.acc)
+    predict_and_save(model, test_loader, 'test', device, args.acc)
     
     
     

@@ -209,7 +209,7 @@ if __name__ == '__main__':
                         type=str)
     
     parser.add_argument('--acc',
-                        default=60,
+                        default=80,
                         help='desired accuracy of noisy labels',
                         type=int)
     

@@ -6,7 +6,7 @@ import os
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Calibrate model using pseudo labels')
-    parser.add_argument('--dataset', type=str, required=False, help='Dataset name', default='cifar-10')
+    parser.add_argument('--dataset', type=str, required=False, help='Dataset name', default='ham10000')
     parser.add_argument('--n_bins', type=int, default=15, help='Number of bins for ECE')
     parser.add_argument('--adaECE_calib', type=bool, default=False, help='Use adaptive ECE to find the best temperature')
     parser.add_argument('--adaECE_eval', type=bool, default=False, help='Use adaptive ECE to evaluate the temperature')
