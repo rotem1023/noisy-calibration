@@ -171,6 +171,8 @@ class CalibrationLoss(nn.Module):
                                                                   epsilon, transition_matrix)
 
                 avg_confidence_in_bin = sorted_confidences[in_bin].mean()
+                if transition_matrix is not None:
+                    print(f"NTS: bin {i} has {in_bin.sum()} examples, confidence is {avg_confidence_in_bin}, accuracy is {accuracy_in_bin}")
                 cur_ece = torch.abs(avg_confidence_in_bin - accuracy_in_bin) * prop_in_bin
                 ece += cur_ece
                 if self.true_labels is not None:
@@ -199,10 +201,6 @@ class CalibrationLoss(nn.Module):
         ece = torch.zeros(1, device=logits.device)
 
         sorted_indices = torch.sort(confidences).indices
-        sorted_confidences = confidences[sorted_indices]
-        sorted_predictions = predictions[sorted_indices]
-        sorted_correctness = correctness[sorted_indices]
-        sorted_labels = labels[sorted_indices]
         bin_indexes = np.linspace(0, len(sorted_indices), self.nbins + 1).astype(int)
         bin_lowers = bin_indexes[:-1]
         bin_uppers = bin_indexes[1:]
@@ -219,6 +217,7 @@ class CalibrationLoss(nn.Module):
             sorted_indices_in_bin = sorted_indices[in_bin]
             relevant_indexes_in_bin = sorted_indices_in_bin[torch.isin(sorted_indices_in_bin, relevant_indexes)]
             not_relevant_indexes_in_bin = sorted_indices_in_bin[~torch.isin(sorted_indices_in_bin, relevant_indexes)]
+            other_acc_in_bin = correctness[not_relevant_indexes_in_bin].float().mean()
             conf_in_bin = confidences[sorted_indices_in_bin].mean()
             acc_in_bin = correctness[relevant_indexes_in_bin].sum() / len(relevant_indexes_in_bin)
             cur_ece = torch.abs(conf_in_bin - acc_in_bin) * (sum(in_bin) / len(correctness))
@@ -227,6 +226,75 @@ class CalibrationLoss(nn.Module):
                 _print_stats_with_indexes(relevant_indexes_in_bin, self.true_labels, labels, predictions,
                                           sorted_indices_in_bin, correctness, i, acc_in_bin, conf_in_bin)
             self.stats['indexes'] = indexes
+        return ece
+
+    def forward_with_confidence(self, logits, labels, pl_conf, num_classes=10):
+        if self.LOGIT:
+            softmaxes = F.softmax(logits, dim=1)
+        else:
+            softmaxes = logits
+        confidences, predictions = torch.max(softmaxes, 1)
+        correctness = predictions.eq(labels)
+        confidences[confidences == 1] = 0.999999
+
+        ece = torch.zeros(1, device=logits.device)
+
+        sorted_indices = torch.sort(confidences).indices
+        bin_indexes = np.linspace(0, len(sorted_indices), self.nbins + 1).astype(int)
+        bin_lowers = bin_indexes[:-1]
+        bin_uppers = bin_indexes[1:]
+
+        indexes = torch.zeros(len(labels))
+        for i in range(len(bin_lowers)):
+            bin_lower = bin_lowers[i]
+            bin_upper = bin_uppers[i]
+
+            # Calculated |confidence - accuracy| in each bin
+            in_bin = np.zeros(len(sorted_indices), dtype=bool)
+            in_bin[bin_lower:bin_upper] = True
+
+            sorted_indices_in_bin = sorted_indices[in_bin]
+            conf_in_bin = confidences[sorted_indices_in_bin].mean()
+            correctness_in_bin = correctness[sorted_indices_in_bin]
+            pl_conf_in_bin = pl_conf[sorted_indices_in_bin]
+            acc_in_bin = (correctness_in_bin*pl_conf_in_bin).sum() / pl_conf_in_bin.sum()
+            cur_ece = torch.abs(conf_in_bin - acc_in_bin) * (sum(in_bin) / len(correctness))
+            ece += cur_ece
+            self.stats['indexes'] = indexes
+        return ece
+
+    def forward_with_selected_indexes(self, logits, labels, selected_indexes, num_classes=10):
+        if self.LOGIT:
+            softmaxes = F.softmax(logits, dim=1)
+        else:
+            softmaxes = logits
+        confidences, predictions = torch.max(softmaxes, 1)
+        correctness = predictions.eq(labels)
+        confidences[confidences == 1] = 0.999999
+
+        ece = torch.zeros(1, device=logits.device)
+
+        sorted_indices = torch.sort(confidences).indices
+        bin_indexes = np.linspace(0, len(sorted_indices), self.nbins + 1).astype(int)
+        bin_lowers = bin_indexes[:-1]
+        bin_uppers = bin_indexes[1:]
+
+        for i in range(len(bin_lowers)):
+            bin_lower = bin_lowers[i]
+            bin_upper = bin_uppers[i]
+
+            # Calculated |confidence - accuracy| in each bin
+            in_bin = np.zeros(len(sorted_indices), dtype=bool)
+            in_bin[bin_lower:bin_upper] = True
+
+            sorted_indices_in_bin = sorted_indices[in_bin]
+            relevant_indexes_in_bin = sorted_indices_in_bin[torch.isin(sorted_indices_in_bin, selected_indexes)]
+            not_relevant_indexes_in_bin = sorted_indices_in_bin[~torch.isin(sorted_indices_in_bin, selected_indexes)]
+            other_acc_in_bin = correctness[not_relevant_indexes_in_bin].float().mean()
+            conf_in_bin = confidences[sorted_indices_in_bin].mean()
+            acc_in_bin = correctness[relevant_indexes_in_bin].sum() / len(relevant_indexes_in_bin)
+            cur_ece = torch.abs(conf_in_bin - acc_in_bin) * (sum(in_bin) / len(correctness))
+            ece += cur_ece
         return ece
 
     def _create_estimate_acc_function(self, bin_lowers, bin_uppers, sorted_indices, correctness):

@@ -16,6 +16,7 @@ class CalibrationMethodName(Enum):
     NLCC = 'NLCC'
     NTS = 'NTS'
     TsClean = 'TS-Clean'
+    NLCCConf = 'NLCCConf'
 
 
 
@@ -62,6 +63,12 @@ def run_calibration_methods(valid_input_data, test_input_data, n_bins, adaECE_ca
     output_loss[CalibrationMethodName.NLCC.value] = calc_calibration_loss_with_temp(ece_loss, test_input_data, T)
     output_t[CalibrationMethodName.NLCC.value] = T
     print("finish nlcc")
+
+    # NLCC conf
+    T = calib_model.find_best_T_with_pl_confidence(valid_input_data.logits.clone().detach(), valid_input_data.noisy_labels.clone().detach(), valid_input_data.confidence_pl).item()
+    output_loss[CalibrationMethodName.NLCCConf.value] = calc_calibration_loss_with_temp(ece_loss, test_input_data, T)
+    output_t[CalibrationMethodName.NLCCConf.value] = T
+    print("finish nlcc conf")
     
     return output_t, output_loss
 

@@ -121,12 +121,56 @@ def _find_agree_close_neighbors(distances, labels):
     return same_label_counts.numpy()
 
 
+def _find_agree_from_close_neighbors(distances, labels):
+    n = len(labels)
+    unique_counts = np.unique(labels, return_counts=True)[1]
+    sorted_distances, sorted_indices = torch.sort(distances, dim=1)
+    # Count closest neighbors with the same label
+    same_label_counts = []
+    for i in range(len(labels)):
+        # Get the sorted indices and labels for neighbors
+        neighbor_indices = sorted_indices[i, 1:]  # Exclude self (index 0)
+        neighbor_labels = labels[neighbor_indices]
+        current_label = labels[i]
+
+        # Count neighbors with the same label as the current vector
+        count = 0
+        for j in range(unique_counts[current_label]):
+            if neighbor_labels[j] == current_label:  # Check if the label matches
+                count += 1
+
+        cur_n = unique_counts[current_label]
+        conf = count/(cur_n)
+        # in case the class are very imbalanced
+        if cur_n/n > 0.5:
+            minus = (cur_n - (n-cur_n))/n
+            conf = conf - minus
+            scale = 1-minus
+            conf = conf/scale
+        same_label_counts.append(conf)
+
+    same_label_counts = torch.tensor(same_label_counts)
+    return same_label_counts.numpy()
+
 def generate_agree_close_neighbors(features, labels):
     distances = _calc_pairwize_distance(features)
     closest_neighbors_agree_counts = _find_agree_close_neighbors(distances, labels)
-    k = np.median(closest_neighbors_agree_counts)
+    k = np.percentile(closest_neighbors_agree_counts, 50)
     indexes = np.where(closest_neighbors_agree_counts > k)[0]
     return torch.from_numpy(indexes)
+
+
+def generate_strong_pl_indexes(features, labels):
+    distances = _calc_pairwize_distance(features)
+    arr =  _find_agree_from_close_neighbors(distances, labels)
+    k = np.percentile(arr, 50)
+    indexes = np.where(arr > k)[0]
+    return torch.from_numpy(indexes)
+
+def generate_pseudo_labels_confidence(features, labels):
+    distances = _calc_pairwize_distance(features)
+    return _find_agree_from_close_neighbors(distances, labels)
+
 
 
 

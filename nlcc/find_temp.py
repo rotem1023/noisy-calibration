@@ -45,6 +45,38 @@ class FindTemp(nn.Module):
 
         return self._calc_optimal_T(eval)
 
+    def find_best_T_with_pl_confidence(self, logits, labels, confidence_pl):
+        ece_loss = CalibrationLoss(adaECE=self.adaECE, n_bins=self.n_bins, LOGIT=self.LOGIT)
+
+        def eval(x):
+            "x ==> temperature T"
+            x = torch.from_numpy(x)
+            if (x < 0):
+                return 1
+            scaled_logits = logits.float() / x
+            return ece_loss.forward_with_confidence(scaled_logits, labels, confidence_pl, self.n_classes)
+        return self._calc_optimal_T(eval)
+
+    def find_best_T_with_randomenss(self, logits, labels, confidence_pl):
+        ece_loss = CalibrationLoss(adaECE=self.adaECE, n_bins=self.n_bins, LOGIT=self.LOGIT)
+        probs = torch.from_numpy(confidence_pl)
+
+        # Sampling (Bernoulli random variable for each element)
+        selected = torch.rand(len(probs)) < probs
+
+        # Get the indexes of selected elements
+        selected_indexes = torch.where(selected)[0]
+
+        def eval(x):
+            "x ==> temperature T"
+            x = torch.from_numpy(x)
+            if (x < 0):
+                return 1
+            scaled_logits = logits.float() / x
+            return ece_loss.forward_with_selected_indexes(scaled_logits, labels, selected_indexes, self.n_classes)
+        return self._calc_optimal_T(eval)
+
+
     def find_best_T_with_noise(self, logits, labels, epsilon):
         assert epsilon is not None, "epsilon should be provided"
 

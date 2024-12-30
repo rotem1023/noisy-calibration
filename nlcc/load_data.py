@@ -10,7 +10,7 @@ class InputData:
     Class that holds the input data for calibration
     '''
 
-    def __init__(self, data_type, logits, noisy_labels, pseudo_labels, labels, transtion_matrix, n_classes, dist_closest_center, relevant_indexes):
+    def __init__(self, data_type, logits, noisy_labels, pseudo_labels, labels, transtion_matrix, n_classes, dist_closest_center, relevant_indexes, confidence_pl):
         self.data_type = data_type
         # logits of the model
         self.logits = logits
@@ -26,6 +26,7 @@ class InputData:
         self.dist_closest_center = dist_closest_center
 
         self.relevant_indexes = relevant_indexes
+        self.confidence_pl = confidence_pl
         
 def _get_cur_file_path():
     return f'{os.path.dirname(os.path.abspath(__file__))}'
@@ -98,11 +99,12 @@ def _load_data(dataset, data_type, twenty_two = True):
     print(f'{dataset} {data_type} acc preds: {sum(labels==predictions)/len(labels)}')
     labels_check = np.squeeze(np.load(f'{data_type_dir}/{data_type}_labels_check.npy'))
     print(f'{dataset} {data_type} check: {sum(labels==labels_check)/len(labels)}')
-    relevant_indexes = generate_agree_close_neighbors(features_map, noisy_labels)
+    relevant_indexes = generate_strong_pl_indexes(features_map, noisy_labels)
+    conf_pl = generate_pseudo_labels_confidence(features_map, noisy_labels)
     print(f'{dataset} {data_type} acc relevant indexes: {sum(labels[relevant_indexes]==noisy_labels[relevant_indexes])/len(relevant_indexes)}')
     return InputData(data_type = data_type, logits=torch.from_numpy(logits), noisy_labels=torch.from_numpy(noisy_labels),
                      pseudo_labels=pseudo_labels, labels=torch.from_numpy(labels), transtion_matrix=tranistion_matrix,
-                     n_classes= n_classes, dist_closest_center=dist_closest_center, relevant_indexes=relevant_indexes)
+                     n_classes= n_classes, dist_closest_center=dist_closest_center, relevant_indexes=relevant_indexes, confidence_pl=conf_pl)
     
     
 
