@@ -10,12 +10,12 @@ import os
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Calibrate model using pseudo labels')
     parser.add_argument('--dataset', type=str, required=False, help='Dataset name', default='bloodmnist')
-    parser.add_argument('--acc', type=int, required=False, help='noisy labels accuracy', default=85)
-    parser.add_argument('--model', type=str, required=False, help='model (resenet50, vgg, densenet121)', default='resnet50')
+    parser.add_argument('--acc', type=int, required=False, help='noisy labels accuracy', default=90)
+    parser.add_argument('--model', type=str, required=False, help='model (resnet50, vgg, densenet121)', default='resnet50')
 
     parser.add_argument('--n_bins', type=int, default=15, help='Number of bins for ECE')
     parser.add_argument('--adaECE_calib', type=bool, default=True, help='Use adaptive ECE to find the best temperature')
-    parser.add_argument('--adaECE_eval', type=bool, default=True, help='Use adaptive ECE to evaluate the temperature')
+    # parser.add_argument('--adaECE_eval', type=bool, default=True, help='Use adaptive ECE to evaluate the temperature')
 
     args = parser.parse_args()
     data_set = args.dataset
@@ -23,8 +23,8 @@ if __name__ == '__main__':
     model= args.model
     n_bins = args.n_bins
     adaECE_calib = args.adaECE_calib
-    adaECE_eval = args.adaECE_eval
-
+    # adaECE_eval = args.adaECE_eval
+    adaECE_eval  = args.adaECE_calib
 
     # Load data
     valid_input_data = load_valid_data(dataset=data_set, model=model, accuracy= accuracy)
@@ -45,5 +45,9 @@ if __name__ == '__main__':
     results = {'T': Ts, loss_st: losses}
     output_dir = f'{os.path.dirname(os.path.abspath(__file__))}/outputs'
     os.makedirs(output_dir, exist_ok=True)
-    with open(f'{output_dir}/{data_set}_calibration_results.json', 'w') as f:
+    dataset_dir = f'{output_dir}/{data_set}'
+    os.makedirs(dataset_dir, exist_ok=True)
+    acc_dir = f'{dataset_dir}/{accuracy}'
+    os.makedirs(acc_dir, exist_ok=True)
+    with open(f'{acc_dir}/model_{model}_{loss_st}_calibration_results.json', 'w') as f:
         json.dump(results, f)

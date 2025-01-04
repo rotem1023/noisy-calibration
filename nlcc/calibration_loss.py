@@ -328,10 +328,12 @@ class CalibrationLoss(nn.Module):
             in_bin = confidences.gt(bin_lower.item()) * confidences.le(bin_upper.item())
             prop_in_bin = in_bin.float().mean()
             if prop_in_bin.item() > 0 and (self.adaECE or in_bin.sum() > 20):
+                correctness_in_bin = correctness[in_bin]
+
                 correctness_selected = correctness[selected_indexes]
                 in_bin_selected = in_bin[selected_indexes]
                 correctness_in_bin_and_selected = correctness_selected[in_bin_selected]
-                accuracy_in_bin = correctness_in_bin_and_selected.sum() / in_bin.sum()
+                accuracy_in_bin = correctness_in_bin_and_selected.sum() / in_bin_selected.sum()
 
                 avg_confidence_in_bin = confidences[in_bin].mean()
                 cur_ece = torch.abs(avg_confidence_in_bin - accuracy_in_bin) * prop_in_bin
