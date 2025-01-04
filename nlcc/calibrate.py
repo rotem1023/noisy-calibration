@@ -9,21 +9,26 @@ import os
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Calibrate model using pseudo labels')
-    parser.add_argument('--dataset', type=str, required=False, help='Dataset name', default='ham10000')
+    parser.add_argument('--dataset', type=str, required=False, help='Dataset name', default='bloodmnist')
+    parser.add_argument('--acc', type=int, required=False, help='noisy labels accuracy', default=85)
+    parser.add_argument('--model', type=str, required=False, help='model (resenet50, vgg, densenet121)', default='resnet50')
+
     parser.add_argument('--n_bins', type=int, default=15, help='Number of bins for ECE')
     parser.add_argument('--adaECE_calib', type=bool, default=True, help='Use adaptive ECE to find the best temperature')
     parser.add_argument('--adaECE_eval', type=bool, default=True, help='Use adaptive ECE to evaluate the temperature')
 
     args = parser.parse_args()
     data_set = args.dataset
+    accuracy = args.acc
+    model= args.model
     n_bins = args.n_bins
     adaECE_calib = args.adaECE_calib
     adaECE_eval = args.adaECE_eval
 
 
     # Load data
-    valid_input_data = load_valid_data(data_set)
-    test_input_data = load_test_data(data_set)
+    valid_input_data = load_valid_data(dataset=data_set, model=model, accuracy= accuracy)
+    test_input_data = load_test_data(dataset=data_set, model=model, accuracy= accuracy)
     # Run calibration methods
     Ts, losses = run_calibration_methods(valid_input_data, test_input_data, n_bins, adaECE_calib, adaECE_eval)
     for key in losses.keys():

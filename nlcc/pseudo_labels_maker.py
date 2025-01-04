@@ -122,7 +122,7 @@ def _find_agree_close_neighbors(distances, labels):
 
 
 def _find_agree_from_close_neighbors(distances, labels):
-    n = len(labels)
+    n = len(labels)-1 # exclude self
     unique_counts = np.unique(labels, return_counts=True)[1]
     sorted_distances, sorted_indices = torch.sort(distances, dim=1)
     # Count closest neighbors with the same label
@@ -139,7 +139,7 @@ def _find_agree_from_close_neighbors(distances, labels):
             if neighbor_labels[j] == current_label:  # Check if the label matches
                 count += 1
 
-        cur_n = unique_counts[current_label]
+        cur_n = unique_counts[current_label]-1 # exclude self
         conf = count/(cur_n)
         # in case the class are very imbalanced
         if cur_n/n > 0.5:

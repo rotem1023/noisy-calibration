@@ -41,7 +41,8 @@ class FindTemp(nn.Module):
             if (x < 0):
                 return 1
             scaled_logits = logits.float() / x
-            return ece_loss.forward_with_indexes(scaled_logits, labels, relevant_indexes, self.n_classes)
+            return ece_loss.forward_with_selected_indexes(scaled_logits, labels, relevant_indexes, self.n_classes)
+            # return ece_loss.forward_with_indexes(scaled_logits, labels, relevant_indexes, self.n_classes)
 
         return self._calc_optimal_T(eval)
 

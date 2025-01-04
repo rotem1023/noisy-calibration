@@ -13,10 +13,13 @@ class CalibrationMethodName(Enum):
     Uncalibrated = 'Uncalibrated'
     NoisyTS = 'Noisy-TS'
     SMPL = 'SMPL'
-    NLCC = 'NLCC'
     NTS = 'NTS'
+    NTS_OPT = 'NTS*'
     TsClean = 'TS-Clean'
     NLCCConf = 'NLCCConf'
+    NLCCRand = 'NLCCRand'
+    NLCC = 'NLCC'
+
 
 
 
@@ -50,13 +53,22 @@ def run_calibration_methods(valid_input_data, test_input_data, n_bins, adaECE_ca
     print("finish noisy ts")
 
     # NTS
-    if valid_input_data.transtion_matrix is not None:
+    if valid_input_data.transition_matrix is not None:
         T = calib_model.find_best_T_with_transition_matrix(valid_input_data.logits.clone().detach(),
-                                                           valid_input_data.pseudo_labels.clone().detach(),
-                                                           valid_input_data.transtion_matrix).item()
+                                                           valid_input_data.noisy_labels.clone().detach(),
+                                                           valid_input_data.transition_matrix).item()
         output_loss[CalibrationMethodName.NTS.value] = calc_calibration_loss_with_temp(ece_loss, test_input_data, T)
         output_t[CalibrationMethodName.NTS.value] = T
         print("finish nts")
+
+        # NTS
+    if valid_input_data.opt_transition_matrix is not None:
+        T = calib_model.find_best_T_with_transition_matrix(valid_input_data.logits.clone().detach(),
+                                                           valid_input_data.noisy_labels.clone().detach(),
+                                                           valid_input_data.opt_transition_matrix).item()
+        output_loss[CalibrationMethodName.NTS_OPT.value] = calc_calibration_loss_with_temp(ece_loss, test_input_data, T)
+        output_t[CalibrationMethodName.NTS_OPT.value] = T
+        print("finish nts opt")
         
     # nlcc
     T =  calib_model.find_best_T_with_indexes(valid_input_data.logits.clone().detach(), valid_input_data.noisy_labels.clone().detach(), relevant_indexes=valid_input_data.relevant_indexes, true_labels = valid_input_data.labels).item()
@@ -69,6 +81,11 @@ def run_calibration_methods(valid_input_data, test_input_data, n_bins, adaECE_ca
     output_loss[CalibrationMethodName.NLCCConf.value] = calc_calibration_loss_with_temp(ece_loss, test_input_data, T)
     output_t[CalibrationMethodName.NLCCConf.value] = T
     print("finish nlcc conf")
+
+    # Nlcc Rand
+    T = calib_model.find_best_T_with_randomenss(valid_input_data.logits.clone().detach(), valid_input_data.noisy_labels.clone().detach(), valid_input_data.confidence_pl).item()
+    output_loss[CalibrationMethodName.NLCCRand.value] = calc_calibration_loss_with_temp(ece_loss, test_input_data, T)
+    output_t[CalibrationMethodName.NLCCRand.value] = T
     
     return output_t, output_loss
 
