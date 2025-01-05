@@ -6,7 +6,7 @@ from sklearn.cluster import KMeans
 
 
 
-def _normalize_features(all_fea):
+def normalize_features(all_fea):
     all_fea = torch.from_numpy(all_fea)
     all_fea = torch.cat((all_fea, torch.ones(all_fea.size(0), 1)), 1)
     all_fea = (all_fea.t() / torch.norm(all_fea, p=2, dim=1)).t()
@@ -167,7 +167,7 @@ def generate_strong_pl_indexes(features, labels):
     indexes = np.where(arr > k)[0]
     return torch.from_numpy(indexes)
 
-def generate_pseudo_labels_confidence(features, labels):
+def generate_noisy_labels_confidence(features, labels):
     distances = _calc_pairwize_distance(features)
     return _find_agree_from_close_neighbors(distances, labels)
 
@@ -175,7 +175,7 @@ def generate_pseudo_labels_confidence(features, labels):
 
 
 def generate_pseudo_labels(noisy_labels, features, n_classes):
-    features = _normalize_features(features)
+    features = normalize_features(features)
     # Calculate the softmaxes of the model
     softmaxes = np.zeros((noisy_labels.size, n_classes))
     softmaxes[np.arange(noisy_labels.size), noisy_labels] = 1
@@ -188,13 +188,11 @@ def generate_pseudo_labels(noisy_labels, features, n_classes):
     dist = _calc_dist_center(features, centers)
     # Assign pseudo labels to the examples
     pseudo_labels = torch.argmin(dist, dim=1)
-    dist_min = _extract_i_th_distance(dist, 1)
-    second_dist = _extract_i_th_distance(dist, 2)
-    return pseudo_labels, second_dist-dist_min
+    return pseudo_labels
 
 
 def generate_pseudo_labels_kmeans(noisy_labels, features, n_classes):
-    features = _normalize_features(features)
+    features = normalize_features(features)
     softmaxes = np.zeros((noisy_labels.size, n_classes))
     softmaxes[np.arange(noisy_labels.size), noisy_labels] = 1
     softmaxes = torch.from_numpy(softmaxes)

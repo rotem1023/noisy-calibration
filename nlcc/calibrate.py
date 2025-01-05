@@ -10,8 +10,8 @@ import os
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Calibrate model using pseudo labels')
     parser.add_argument('--dataset', type=str, required=False, help='Dataset name', default='bloodmnist')
-    parser.add_argument('--acc', type=int, required=False, help='noisy labels accuracy', default=95)
-    parser.add_argument('--model', type=str, required=False, help='model (resnet50, vgg, densenet121)', default='densenet121')
+    parser.add_argument('--acc', type=int, required=False, help='noisy labels accuracy', default=90)
+    parser.add_argument('--model', type=str, required=False, help='model (resnet50, vgg, densenet121)', default='vgg')
 
     parser.add_argument('--n_bins', type=int, default=15, help='Number of bins for ECE')
     parser.add_argument('--adaECE_calib', type=bool, default=True, help='Use adaptive ECE to find the best temperature')
