@@ -10,8 +10,8 @@ import os
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Calibrate model using pseudo labels')
     parser.add_argument('--dataset', type=str, required=False, help='Dataset name', default='bloodmnist')
-    parser.add_argument('--acc', type=int, required=False, help='noisy labels accuracy', default=90)
-    parser.add_argument('--model', type=str, required=False, help='model (resnet50, vgg, densenet121)', default='resnet50')
+    parser.add_argument('--acc', type=int, required=False, help='noisy labels accuracy', default=95)
+    parser.add_argument('--model', type=str, required=False, help='model (resnet50, vgg, densenet121)', default='densenet121')
 
     parser.add_argument('--n_bins', type=int, default=15, help='Number of bins for ECE')
     parser.add_argument('--adaECE_calib', type=bool, default=True, help='Use adaptive ECE to find the best temperature')
@@ -31,18 +31,23 @@ if __name__ == '__main__':
     test_input_data = load_test_data(dataset=data_set, model=model, accuracy= accuracy)
     # Run calibration methods
     Ts, losses = run_calibration_methods(valid_input_data, test_input_data, n_bins, adaECE_calib, adaECE_eval)
-    for key in losses.keys():
-        losses[key] = round(100*losses[key], 2)
-        Ts[key] = round(Ts[key], 2)
 
     loss_st = "adaECE" if adaECE_eval else "ECE"
+
+    for key in Ts.keys():
+        losses[loss_st][key] = round(100*losses[loss_st][key], 2)
+        Ts[key] = round(Ts[key], 2)
+
 
 
     print(f"Data set: {data_set}")
     print(f"losses: {losses}")
     print(f"T: {Ts}")
 
-    results = {'T': Ts, loss_st: losses}
+    # create final dict
+    results = {'T': Ts}
+    results.update(losses)
+
     output_dir = f'{os.path.dirname(os.path.abspath(__file__))}/outputs'
     os.makedirs(output_dir, exist_ok=True)
     dataset_dir = f'{output_dir}/{data_set}'
@@ -50,4 +55,4 @@ if __name__ == '__main__':
     acc_dir = f'{dataset_dir}/{accuracy}'
     os.makedirs(acc_dir, exist_ok=True)
     with open(f'{acc_dir}/model_{model}_{loss_st}_calibration_results.json', 'w') as f:
-        json.dump(results, f)
+        json.dump(results, f, indent=4)

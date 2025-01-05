@@ -137,7 +137,8 @@ def _load_data(dataset, model, accuracy, data_type):
     relevant_indexes = generate_strong_pl_indexes(features_map, noisy_labels)
     conf_pl = generate_pseudo_labels_confidence(features_map, noisy_labels)
 
-    print(f"accuracy  = {sum(noisy_labels == labels)/len(labels)}")
+    print(f"accuracy noisy_labels  = {sum(noisy_labels == labels)/len(labels)}")
+    print(f"accuracy model= {sum(preds == labels)/len(labels)}")
     return NoisyInputData(data_type = data_type, logits=torch.from_numpy(logits), noisy_labels=torch.from_numpy(noisy_labels),
                      labels=labels, transition_matrix=transition_matrix, opt_transition_matrix=opt_transition_matrix,
                      n_classes= n_classes, relevant_indexes=relevant_indexes, confidence_pl=conf_pl)
