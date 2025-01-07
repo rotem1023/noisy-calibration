@@ -175,6 +175,9 @@ class CalibrationLoss(nn.Module):
                 cur_ece = torch.abs(avg_confidence_in_bin - accuracy_in_bin) * prop_in_bin
                 ece += cur_ece
                 if self.true_labels is not None:
+                    true_correctness = predictions.eq(self.true_labels)
+                    true_acc_in_bin = self._calculate_accuracy_in_bin(in_bin, true_correctness, num_classes, predictions, self.true_labels,
+                                                                      None, None)
                     calc_accuracy(i, predictions, self.true_labels, labels, in_bin, avg_confidence_in_bin, self.stats)
         return ece
 
@@ -238,7 +241,6 @@ class CalibrationLoss(nn.Module):
             in_bin = confidences.gt(bin_lower.item()) * confidences.le(bin_upper.item())
             prop_in_bin = in_bin.float().mean()
             if prop_in_bin.item() > 0 and (self.adaECE or in_bin.sum() > 20):
-                correctness_in_bin = correctness[in_bin]
 
                 correctness_selected = correctness[selected_indexes]
                 in_bin_selected = in_bin[selected_indexes]

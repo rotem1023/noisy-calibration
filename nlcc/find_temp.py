@@ -10,6 +10,28 @@ from scipy.optimize import minimize
 ranges = (slice(1, 10, 0.05),)
 
 
+def get_common_selected_indexes(probs):
+    """
+    Select indexes based on probabilities and return the intersection of two selections.
+
+    Args:
+        probs (torch.Tensor): A tensor of probabilities for selection.
+
+    Returns:
+        torch.Tensor: A tensor containing the indexes that are selected in both rounds.
+    """
+    # Sampling (Bernoulli random variable for each element)
+    selected1 = torch.rand(len(probs)) < probs
+    selected_indexes1 = torch.where(selected1)[0]
+
+    selected2 = torch.rand(len(probs)) < probs
+    selected_indexes2 = torch.where(selected2)[0]
+
+    # Get intersection of both selected indexes
+    common_selected_indexes = torch.tensor(list(set(selected_indexes1.tolist()) & set(selected_indexes2.tolist())))
+
+    return common_selected_indexes
+
 class FindTemp(nn.Module):
 
     def __init__(self, n_classes=10, n_bins=15, LOGIT=True, adaECE=False):
@@ -46,8 +68,8 @@ class FindTemp(nn.Module):
 
         return self._calc_optimal_T(eval)
 
-    def find_best_T_with_pl_confidence(self, logits, labels, confidence_pl):
-        ece_loss = CalibrationLoss(adaECE=self.adaECE, n_bins=self.n_bins, LOGIT=self.LOGIT)
+    def find_best_T_with_pl_confidence(self, logits, labels, confidence_pl, true_labels = None):
+        ece_loss = CalibrationLoss(adaECE=self.adaECE, n_bins=self.n_bins, LOGIT=self.LOGIT, true_labels=true_labels)
 
         def eval(x):
             "x ==> temperature T"
@@ -67,6 +89,8 @@ class FindTemp(nn.Module):
 
         # Get the indexes of selected elements
         selected_indexes = torch.where(selected)[0]
+
+        # selected_indexes= get_common_selected_indexes(probs)
 
         def eval(x):
             "x ==> temperature T"

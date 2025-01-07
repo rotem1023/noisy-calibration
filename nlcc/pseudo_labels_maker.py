@@ -4,6 +4,19 @@ from scipy.spatial import distance
 from sklearn.cluster import KMeans
 
 
+def _normalize_unique_counts(labels):
+    results = []
+    labels, counts = np.unique(labels, return_counts=True)
+    i = 0
+    cur_index = 0
+    while(i<= labels[-1]):
+        if i== labels[cur_index]:
+            results.append(counts[cur_index])
+            cur_index +=1
+        else:
+            results.append(0)
+        i+=1
+    return np.array(results)
 
 
 def normalize_features(all_fea):
@@ -123,7 +136,7 @@ def _find_agree_close_neighbors(distances, labels):
 
 def _find_agree_from_close_neighbors(distances, labels):
     n = len(labels)-1 # exclude self
-    unique_counts = np.unique(labels, return_counts=True)[1]
+    unique_counts = _normalize_unique_counts(labels)
     sorted_distances, sorted_indices = torch.sort(distances, dim=1)
     # Count closest neighbors with the same label
     same_label_counts = []

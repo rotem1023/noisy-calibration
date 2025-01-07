@@ -138,34 +138,31 @@ def plot_avg_noise_pl_over_bins(stats, input_data, syn_pl, data_set, plot_name, 
     '''
     y= input_data.labels
     noisy_labels = input_data.noisy_labels
-    y_tilda = input_data.pseudo_labels
+    # y_tilda = input_data.pseudo_labels
     prediction = torch.argmax(input_data.logits, dim=1)
     index = stats['indexes']
-    confidences = sorted(list(stats['confidence'].values()))
     bins = sorted(list(index.unique().int()))
-    noises = []
-    noisy_labels_noises = []
+    noise_accs = []
     syn_noises = []
-    prediction_noises = []
-    prediction_noises_noisy = []
+    pred_accs = []
+    pred_noise_accs = []
     for i in range(len(bins)):
         bin_index = index == bins[i]
 
         prediction_bin = prediction[bin_index]
         noisy_labels_bin = noisy_labels[bin_index]
-        y_tilda_bin = y_tilda[bin_index]
         y_bin = y[bin_index]
 
 
 
-        noise = 100*(sum(y_tilda_bin == y_bin) / len(y_tilda_bin))
-        noises.append(round(noise.item()))
-        noisy_label_noise = 100*(sum(noisy_labels_bin == y_bin) / len(noisy_labels_bin))
-        noisy_labels_noises.append(round(noisy_label_noise.item()))
-        preds_noise = 100*(sum(prediction_bin == y_bin) / len(prediction_bin))
-        prediction_noises.append(round(preds_noise.item()))
-        preds_noise_noisy = 100*(sum(prediction_bin == noisy_labels_bin) / len(prediction_bin))
-        prediction_noises_noisy.append(round(preds_noise_noisy.item()))
+        # noise = 100*(sum(y_tilda_bin == y_bin) / len(y_tilda_bin))
+        # noises.append(round(noise.item()))
+        noise_acc = 100*(sum(noisy_labels_bin == y_bin) / len(noisy_labels_bin))
+        noise_accs.append(round(noise_acc.item()))
+        pred_acc = 100*(sum(prediction_bin == y_bin) / len(prediction_bin))
+        pred_accs.append(round(pred_acc.item()))
+        pred_noise_acc = 100*(sum(prediction_bin == noisy_labels_bin) / len(prediction_bin))
+        pred_noise_accs.append(round(pred_noise_acc.item()))
 
 
         if syn_pl is not None:
@@ -185,12 +182,12 @@ def plot_avg_noise_pl_over_bins(stats, input_data, syn_pl, data_set, plot_name, 
     fig, ax = plt.subplots(figsize=(10, 6))
 
     # Plot bars
-    # if syn_pl is not None:
-    #     _add_ax_plot(ax,x , syn_noises, color=sns.color_palette(color_palette)[8], label='Synthetic')
+    if syn_pl is not None:
+        _add_ax_plot(ax,x , syn_noises, color=sns.color_palette(color_palette)[8], label='Synthetic')
     # _add_ax_plot(ax, x, noises, label='Enhanced PL', color=sns.color_palette(color_palette)[4])
-    # _add_ax_plot(ax,x , noisy_labels_noises, color=sns.color_palette(color_palette)[6], label='PL')
-    _add_ax_plot(ax,x , prediction_noises, color=sns.color_palette(color_palette)[3], label=r'$A_i$')
-    _add_ax_plot(ax,x , prediction_noises_noisy, color=sns.color_palette(color_palette)[2], label=r'$\tilde{A}_i$')
+    # _add_ax_plot(ax,x , noise_accs, color=sns.color_palette(color_palette)[6], label=r'$\tilde{y}_t = y_t$')
+    _add_ax_plot(ax,x , pred_accs, color=sns.color_palette(color_palette)[3], label=r'$A_i$')
+    _add_ax_plot(ax,x , pred_noise_accs, color=sns.color_palette(color_palette)[2], label=r'$\tilde{A}_i$')
 
 
     # Label the plot
@@ -207,8 +204,8 @@ def plot_avg_noise_pl_over_bins(stats, input_data, syn_pl, data_set, plot_name, 
     plt.tight_layout()
 
     # Save the plot
-    filename = f"{plot_name}_{data_set}_{len(bins)}_bins.png"
-    dir_to_save = _get_dataset_plots_dir(data_set, test)
+    filename = f"{plot_name}_{data_set.dataset_name}_{len(bins)}_bins_model_{data_set.model_name}_acc_{data_set.accuracy}.png"
+    dir_to_save = _get_dataset_plots_dir(data_set.dataset_name, test)
     plt.savefig(f"{dir_to_save}/{filename}", dpi=300, bbox_inches='tight')
 
     # Show the plot

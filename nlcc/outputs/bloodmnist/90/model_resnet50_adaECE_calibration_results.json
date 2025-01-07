@@ -1,1 +1,52 @@
-{"T": {"Uncalibrated": 1, "TS-Clean": 1.93, "Noisy-TS": 2.2, "NTS": 1.03, "NTS*": 1.56, "NLCC": 1.67, "NLCCConf": 1.99, "NLCCRand": 2.02}, "adaECE": {"Uncalibrated": 5.48, "TS-Clean": 1.0, "Noisy-TS": 2.07, "NTS": 5.4, "NTS*": 3.18, "NLCC": 2.46, "NLCCConf": 0.98, "NLCCRand": 1.01}}
+{
+    "T": {
+        "Uncalibrated": 1,
+        "TS-Clean": 1.66,
+        "Noisy-TS": 2.11,
+        "NTS": 0.95,
+        "NTS*": 1.59,
+        "NLCC": 1.63,
+        "NLCCConf": 1.92,
+        "NLCCRand": 1.87
+    },
+    "adaECE": {
+        "Uncalibrated": 5.24,
+        "TS-Clean": 1.56,
+        "Noisy-TS": 2.69,
+        "NTS": 5.47,
+        "NTS*": 2.11,
+        "NLCC": 1.79,
+        "NLCCConf": 1.25,
+        "NLCCRand": 0.99
+    },
+    "adaNLL": {
+        "Uncalibrated": 0.37905189394950867,
+        "TS-Clean": 0.28714704513549805,
+        "Noisy-TS": 0.29421156644821167,
+        "NTS": 0.39632126688957214,
+        "NTS*": 0.2902703583240509,
+        "NLCC": 0.28830572962760925,
+        "NLCCConf": 0.28647589683532715,
+        "NLCCRand": 0.28544870018959045
+    },
+    "adaBS": {
+        "Uncalibrated": 0.13297763466835022,
+        "TS-Clean": 0.12512832880020142,
+        "Noisy-TS": 0.12621985375881195,
+        "NTS": 0.1339794248342514,
+        "NTS*": 0.12555724382400513,
+        "NLCC": 0.12529325485229492,
+        "NLCCConf": 0.12493282556533813,
+        "NLCCRand": 0.12479791045188904
+    },
+    "adaSCE": {
+        "Uncalibrated": 0.16158512234687805,
+        "TS-Clean": 0.15434783697128296,
+        "Noisy-TS": 0.16393229365348816,
+        "NTS": 0.16296298801898956,
+        "NTS*": 0.1540399044752121,
+        "NLCC": 0.15392480790615082,
+        "NLCCConf": 0.15746700763702393,
+        "NLCCRand": 0.15541766583919525
+    }
+}

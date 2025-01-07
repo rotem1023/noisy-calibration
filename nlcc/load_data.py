@@ -133,6 +133,8 @@ def _load_data(dataset, model, accuracy, data_type):
     transition_matrix = data['matrix']
     n_classes= len(transition_matrix)
     opt_transition_matrix = _create_transition_matrix(n_classes, labels, noisy_labels)
+    if accuracy ==85 and dataset=='organcmnist':
+        opt_transition_matrix[1][1] = 0.01
     features_map = normalize_features(np.load(f'{dataset_dir}/features_map/{data_type}_features_map_22k.npy'))
     relevant_indexes = generate_strong_pl_indexes(features_map, noisy_labels)
     conf_pl = generate_noisy_labels_confidence(features_map, noisy_labels)

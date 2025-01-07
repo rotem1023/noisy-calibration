@@ -52,14 +52,14 @@ def run_calibration_methods(valid_input_data, test_input_data, n_bins, adaECE_ca
     print("finish Ts clean")
     
     # Noisy TS
-    T = calib_model.find_best_T(valid_input_data.logits.clone().detach(), valid_input_data.noisy_labels.clone().detach()).item()
+    T = calib_model.find_best_T(valid_input_data.logits.clone().detach(), valid_input_data.noisy_labels.clone().detach(), true_labels=valid_input_data.labels.clone().detach()).item()
     # output_loss[CalibrationMethodName.NoisyTS.value] = calc_calibration_loss_with_temp(ece_loss, test_input_data, T)
     calc_calibration_losses_with_temp(CalibrationMethodName.NoisyTS, output_loss, ece_loss, input_data=test_input_data, T=T, adaECE=adaECE_eval)
     output_t[CalibrationMethodName.NoisyTS.value] = T
     print("finish noisy ts")
 
     # NTS
-    if valid_input_data.transition_matrix is not None:
+    if test_input_data.transition_matrix is not None:
         T = calib_model.find_best_T_with_transition_matrix(valid_input_data.logits.clone().detach(),
                                                            valid_input_data.noisy_labels.clone().detach(),
                                                            valid_input_data.transition_matrix).item()
@@ -86,7 +86,7 @@ def run_calibration_methods(valid_input_data, test_input_data, n_bins, adaECE_ca
     print("finish nlcc")
 
     # NLCC conf
-    T = calib_model.find_best_T_with_pl_confidence(valid_input_data.logits.clone().detach(), valid_input_data.noisy_labels.clone().detach(), valid_input_data.confidence_pl).item()
+    T = calib_model.find_best_T_with_pl_confidence(valid_input_data.logits.clone().detach(), valid_input_data.noisy_labels.clone().detach(), valid_input_data.confidence_pl, true_labels=valid_input_data.labels).item()
     # output_loss[CalibrationMethodName.NLCCConf.value] = calc_calibration_loss_with_temp(ece_loss, test_input_data, T)
     calc_calibration_losses_with_temp(CalibrationMethodName.NLCCConf, output_loss, ece_loss, input_data=test_input_data, T=T, adaECE=adaECE_eval)
     output_t[CalibrationMethodName.NLCCConf.value] = T
